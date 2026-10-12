@@ -12,8 +12,9 @@ export const RULES = {
   /** Deck vide : la défausse est mélangée pour former un nouveau deck. */
   reshuffleDiscardWhenEmpty: true,
 
-  /** Nombre maximal d'Alliés (Personnages) sur le terrain. Les Objets sont illimités. */
+  /** Nombre maximal d'Alliés (Personnages) et d'Objets sur le terrain. */
   maxAllies: 3,
+  maxObjects: 3,
   /** Un Allié ne peut pas attaquer le tour où il est posé. */
   summoningSickness: true,
 
@@ -23,8 +24,10 @@ export const RULES = {
   startingSpire: 0,
   /** Spire à atteindre pour lancer l'ultimate du Héros. */
   ultimateSpire: 6,
-  /** L'ultimate ne peut être lancé qu'une fois par partie. */
-  ultimateOncePerGame: true,
+  /** L'ultimate ne peut être lancé qu'une fois par partie (sinon : à chaque retour à la spire 6). */
+  ultimateOncePerGame: false,
+  /** Spire après l'ultimate ou un Dessin légendaire. */
+  spireAfterUltimate: 0,
 
   /** Cartes gardées en Zone Imagination à la fin du tour. */
   imaginationLimit: 2,
@@ -37,7 +40,7 @@ export const RULES = {
 
 /* Les 4 grandes catégories de cartes (le Héros est à part).
    - 'ally'    : Allié — va sur le terrain (3 maximum) et combat
-   - 'object'  : Objet — va sur le terrain (illimité), ne combat pas
+   - 'object'  : Objet — va sur le terrain (3 maximum), ne combat pas
    - 'drawing' : Dessin — effet immédiat puis défausse, ou posé en Zone Imagination
    Un Type absent de cette liste est traité comme un Dessin. */
 export type Category = 'ally' | 'object' | 'drawing';
@@ -53,3 +56,6 @@ export const TYPE_CATEGORY: Record<string, Category> = {
 };
 
 export const HERO_TYPE = 'Héros';
+
+/* Types qui ne se lancent qu'à la spire de l'ultimate, et font ensuite redescendre la spire. */
+export const ULTIMATE_TYPES = new Set(['Dessin légendaire']);

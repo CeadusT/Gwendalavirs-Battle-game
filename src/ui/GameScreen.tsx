@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react';
 import type { Action, CardDef, GameState, PlayerIndex, Target } from '../engine/types';
-import { applyAction, attackOf, canRiposte, cannotAttackReason, cannotImagineReason, cannotPlayReason, cannotUltimateReason, cardsToPay, categoryOf, defOf, healthOf, isAlly, other } from '../engine/game';
+import { alliesOf, applyAction, attackOf, objectsOf, canRiposte, cannotAttackReason, cannotImagineReason, cannotPlayReason, cannotUltimateReason, cardsToPay, categoryOf, defOf, healthOf, isAlly, other } from '../engine/game';
 import { RULES } from '../engine/rules';
 import { CardBack, CardView, type CardStats } from './CardView';
 import { ContextMenu, type MenuItem } from './ContextMenu';
@@ -253,7 +253,9 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
   const renderBoard = (player: PlayerIndex) => (
     <div className={`board-row ${player === bottom ? 'is-mine' : 'is-theirs'}`}>
       {renderImagination(player)}
-      <span className="board-count" title="Alliés sur le terrain">Alliés {state.players[player].board.filter(uid => isAlly(state, uid)).length}/{RULES.maxAllies}</span>
+      <span className="board-count" title="Alliés et Objets sur le terrain">
+        Alliés {alliesOf(state, player).length}/{RULES.maxAllies} · Objets {objectsOf(state, player).length}/{RULES.maxObjects}
+      </span>
       {state.players[player].board.length === 0 && <span className="board-empty">Terrain vide</span>}
       {state.players[player].board.map(uid => {
         const card = state.cards[uid];

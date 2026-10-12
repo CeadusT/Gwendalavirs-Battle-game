@@ -4,7 +4,7 @@
    ========================================================================== */
 
 import type { Action, ActionResult, CardDef, CardInstance, DeckList, GameState, LogKind, PlayerIndex, PlayerState, Target, Zone } from './types';
-import { HERO_TYPE, RULES, TYPE_CATEGORY, type Category } from './rules';
+import { HERO_TYPE, RULES, TYPE_CATEGORY, ULTIMATE_TYPES, type Category } from './rules';
 import { shuffle } from './rng';
 
 const ZONES = ['deck', 'hand', 'board', 'imagination', 'discard'] as const;
@@ -26,6 +26,9 @@ export function healthOf(state: GameState, uid: string): number {
 }
 
 export const alliesOf = (state: GameState, player: PlayerIndex) => state.players[player].board.filter(uid => isAlly(state, uid));
+export const objectsOf = (state: GameState, player: PlayerIndex) => state.players[player].board.filter(uid => categoryOf(defOf(state, uid)) === 'object');
+/** Dessin légendaire : se lance à la spire 6 et fait redescendre la spire. */
+export const isUltimateCard = (def: CardDef) => ULTIMATE_TYPES.has(def.type);
 
 /** Nombre de cartes de la main à défausser pour payer une carte (après la Volonté générée). */
 export function cardsToPay(state: GameState, uid: string): number {
@@ -45,6 +48,8 @@ export function cannotPlayReason(state: GameState, uid: string): string | null {
   const player = state.players[card.owner];
   const category = categoryOf(def);
   if (category === 'ally' && alliesOf(state, card.owner).length >= RULES.maxAllies) return `Tu as déjà ${RULES.maxAllies} Alliés sur le terrain.`;
+  if (category === 'object' && objectsOf(state, card.owner).length >= RULES.maxObjects) return `Tu as déjà ${RULES.maxObjects} Objets sur le terrain.`;
+  if (isUltimateCard(def) && player.spire < RULES.ultimateSpire) return `${def.type} : se lance seulement à la spire ${RULES.ultimateSpire} (tu es à ${player.spire}).`;
   if (category !== 'drawing' && def.unique && player.board.some(u => state.cards[u].defId === card.defId)) return `${def.name} est unique : un exemplaire est déjà sur le terrain.`;
   const available = player.hand.filter(u => u !== uid).length;
   if (cardsToPay(state, uid) > available) return `Pas assez de Volonté : il faut ${def.spire} (cartes en main ou Volonté générée).`;
@@ -173,6 +178,7 @@ export function applyAction(previous: GameState, action: Action): ActionResult {
         moveTo(state, card, 'discard');
         // La spire parfaite est écrite dans le texte de la carte : le journal rappelle la spire actuelle.
         log(state, card.owner, 'play', `${player.name} lance ${def.name}${from}${paid}, à la spire ${player.spire}. Effet à appliquer.`);
+        if (isUltimateCard(def)) resetSpire(state, card.owner);
       } else {
         moveTo(state, card, 'board');
         card.enteredOnTurn = state.turn;
@@ -227,6 +233,7 @@ export function applyAction(previous: GameState, action: Action): ActionResult {
       const p = state.players[action.player];
       p.ultimateUsed = true;
       log(state, action.player, 'play', `${p.name} lance l’ultimate de ${state.defs[p.heroDefId!].name} ! Effet à appliquer.`);
+      resetSpire(state, action.player);
       return { state };
     }
 
@@ -306,6 +313,13 @@ export function applyAction(previous: GameState, action: Action): ActionResult {
 /* ---------- Étapes internes (modifient l'état copié) ---------- */
 
 const clampSpire = (value: number) => Math.max(RULES.spireMin, Math.min(RULES.spireMax, value));
+
+function resetSpire(state: GameState, player: PlayerIndex) {
+  const p = state.players[player];
+  const before = p.spire;
+  p.spire = clampSpire(RULES.spireAfterUltimate);
+  log(state, player, 'spire', `${p.name} redescend : spire ${before} → ${p.spire}.`);
+}
 
 function log(state: GameState, player: PlayerIndex | null, kind: LogKind, text: string) {
   state.log.push({ turn: state.turn, player, kind, text });

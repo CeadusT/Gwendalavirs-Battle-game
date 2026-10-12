@@ -21,7 +21,7 @@ Version actuelle : **0.2**.
 - **Jouer une carte** : clic dessus. Si elle coûte de la Volonté, on clique ensuite les cartes de la main à défausser pour payer.
 - **Dessin** : un clic propose de le lancer, ou de le poser en Zone Imagination en faisant monter ou descendre la spire d’un cran.
 - **Attaquer** : clic sur un de ses Alliés, puis sur une cible (Allié adverse ou Héros adverse). Le défenseur choisit de répliquer ou non.
-- **Ultimate** : bouton près de l’échelle de spire, actif à la spire 6.
+- **Ultimate** : bouton près de l’échelle de spire, actif à la spire 6 (la spire redescend ensuite à 0).
 - **Bac à sable (clic droit)** sert à appliquer à la main les effets pas encore programmés :
   - dégâts, soins, ATK / PV ;
   - spire, Volonté générée ;
@@ -45,9 +45,10 @@ Toutes les valeurs sont dans [`src/engine/rules.ts`](src/engine/rules.ts) : modi
 | Zone Imagination | Visible. Une carte posée ne peut être jouée qu’à partir du tour suivant. En fin de tour, 2 cartes maximum (on choisit lesquelles garder) |
 | Dessins | Lancés : effet, puis défausse. Le journal rappelle la spire au moment du lancement (bonus de spire parfaite) |
 | Alliés | 3 maximum. Ne peuvent pas attaquer le tour où ils arrivent. Une attaque les incline. Un Allié incliné ne peut pas répliquer |
-| Objets | Illimités, ne combattent pas et ne peuvent pas être attaqués |
+| Objets | 3 maximum. Ne combattent pas et ne peuvent pas être attaqués |
 | Unique | Une carte « unique » (case du Card Studio) ne peut pas être deux fois sur le terrain du même joueur |
-| Ultimate | Jouable à la spire 6 |
+| Ultimate | Jouable à la spire 6, puis la spire redescend à 0 |
+| Dessins légendaires | Ne se lancent qu’à la spire 6, puis la spire redescend à 0 |
 
 ## Lancer le projet (développeurs)
 

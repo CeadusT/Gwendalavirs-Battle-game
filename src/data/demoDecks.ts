@@ -21,8 +21,8 @@ const C = {
   encre: card({ id: 'base-7', name: 'Encre des fondations', type: 'Dessin de base', color: 'Marron', spire: 0, text: 'Tout commence par une première marque.' }),
   jardin: card({ id: 'base-8', name: 'Jardin suspendu', type: 'Objet', color: 'Vert', rarity: 'Rare', spire: 4, text: 'Une parcelle de vie arrachée au vide.' }),
   fracture: card({ id: 'base-9', name: 'Fracture vermillon', type: 'Dessin avancé', color: 'Rouge', rarity: 'Rare', spire: 4, text: 'Déchire la composition avant qu’elle ne se referme.' }),
-  constellation: card({ id: 'base-10', name: 'Constellation impossible', type: 'Dessin légendaire', color: 'Bleu', rarity: 'Légendaire', spire: 5, text: 'Les étoiles refusent ici leur ordre habituel.' }),
-  monolithe: card({ id: 'base-11', name: 'Monolithe de l’entre-monde', type: 'Dessin légendaire', color: 'Violet', rarity: 'Légendaire', spire: 6, text: 'Il se tient là où deux réalités se touchent.' }),
+  constellation: card({ id: 'base-10', name: 'Constellation impossible', type: 'Dessin légendaire', color: 'Bleu', rarity: 'Légendaire', spire: 3, text: 'Les étoiles refusent ici leur ordre habituel.' }),
+  monolithe: card({ id: 'base-11', name: 'Monolithe de l’entre-monde', type: 'Dessin légendaire', color: 'Violet', rarity: 'Légendaire', spire: 4, text: 'Il se tient là où deux réalités se touchent.' }),
   // Personnages supplémentaires (démo uniquement) pour que les decks aient de quoi combattre.
   eclaireur: card({ id: 'demo-1', name: 'Éclaireur des marches', type: 'Personnage', color: 'Bleu', spire: 1, attack: 1, health: 2, text: 'Toujours le premier à franchir la frontière.' }),
   gardienne: card({ id: 'demo-2', name: 'Gardienne de l’archive', type: 'Personnage', color: 'Violet', spire: 3, attack: 3, health: 5, unique: true, text: '<b>Unique.</b> Rien ne sort sans son accord.' }),

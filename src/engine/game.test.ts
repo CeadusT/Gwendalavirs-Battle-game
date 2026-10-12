@@ -64,7 +64,7 @@ describe('Volonté', () => {
 });
 
 describe('Alliés et Objets', () => {
-  it('3 Alliés maximum, Objets illimités', () => {
+  it('3 Alliés maximum', () => {
     const relic = normalizeCard({ id: 'o', name: 'Relique', type: 'Objet', spire: 0 });
     let s = game(deckOf([ally(), 4], [relic, 1]), deckOf([ally(), 30]), 4);
     const refused: string[] = [];
@@ -75,6 +75,14 @@ describe('Alliés et Objets', () => {
     }
     expect(s.players[0].board).toHaveLength(4);
     expect(refused).toEqual([expect.stringMatching(/3 Alliés/)]);
+  });
+
+  it('3 Objets maximum', () => {
+    const relic = normalizeCard({ id: 'o', name: 'Relique', type: 'Objet', spire: 0 });
+    let s = game(deckOf([relic, 30]), deckOf([ally(), 30]));
+    const hand = s.players[0].hand.slice();
+    for (const uid of hand.slice(0, 3)) s = act(s, { type: 'PLAY_CARD', uid, payWith: [] });
+    expect(cannotPlayReason(s, hand[3])).toMatch(/3 Objets/);
   });
 
   it('un Allié unique ne peut être posé qu’une fois', () => {
@@ -151,7 +159,17 @@ describe('spire et Imagination', () => {
     expect(s.players[0].discard).toContain(d1);
   });
 
-  it('la spire reste entre 0 et 6, ultimate à 6, une fois', () => {
+  it('un Dessin légendaire se lance à la spire 6 et la fait redescendre à 0', () => {
+    const legend = normalizeCard({ id: 'l', name: 'Monolithe', type: 'Dessin légendaire', spire: 0 });
+    let s = game(deckOf([legend, 30]), deckOf([ally(), 30]));
+    const uid = s.players[0].hand[0];
+    expect(cannotPlayReason(s, uid)).toMatch(/spire 6/);
+    s = act(s, { type: 'ADJUST', target: { kind: 'hero', player: 0 }, stat: 'spire', delta: 6 });
+    s = act(s, { type: 'PLAY_CARD', uid, payWith: [] });
+    expect(s.players[0].spire).toBe(0);
+  });
+
+  it('la spire reste entre 0 et 6, l’ultimate se lance à 6 et la fait redescendre à 0', () => {
     let s = createGame({ decks: [DEMO_DECKS[0], DEMO_DECKS[1]], names: ['A', 'B'], seed: 3 });
     s = act(s, { type: 'ADJUST', target: { kind: 'hero', player: s.active }, stat: 'spire', delta: -1 });
     expect(s.players[s.active].spire).toBe(0);
@@ -159,7 +177,8 @@ describe('spire et Imagination', () => {
     for (let i = 0; i < 8; i++) s = act(s, { type: 'ADJUST', target: { kind: 'hero', player: s.active }, stat: 'spire', delta: 1 });
     expect(s.players[s.active].spire).toBe(RULES.spireMax);
     s = act(s, { type: 'ULTIMATE', player: s.active });
-    expect(cannotUltimateReason(s, s.active)).toMatch(/déjà/);
+    expect(s.players[s.active].spire).toBe(0);
+    expect(cannotUltimateReason(s, s.active)).toMatch(/spire 6/);
   });
 });
 
