@@ -330,49 +330,80 @@ h2 {
   color: #ff9d8f;
 }
 
-.hero-will {
+/* Échelle de spire (0 à 6) */
+.spire {
   display: grid;
   justify-items: center;
-  gap: .15em;
-  min-width: 74px;
+  gap: .25em;
 }
 
-.hero-willValue {
-  font-family: 'Cinzel', Georgia, serif;
-  font-weight: 700;
-  font-size: 1.35em;
-  color: #9cc8f0;
-}
-
-.hero-willValue small {
-  font-size: .6em;
+.spire-label,
+.zone-label {
+  font-family: 'Alegreya Sans SC', 'Alegreya', sans-serif;
+  font-size: .72em;
+  letter-spacing: .1em;
   color: var(--muted);
 }
 
-.hero-willPips {
+.spire-track {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
   gap: 3px;
-  max-width: 80px;
 }
 
-.hero-willPips i {
-  width: 8px;
-  height: 8px;
-  transform: rotate(45deg);
-  border: 1px solid #5d87ad;
-  background: transparent;
+.spire-track i {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #4b5f74;
+  border-radius: 4px;
+  font-style: normal;
+  font-family: 'Cinzel', Georgia, serif;
+  font-weight: 700;
+  font-size: .72em;
+  color: #7f93a8;
 }
 
-.hero-willPips i.on {
-  background: #7fb6e6;
+.spire-track i.is-passed {
+  border-color: #5d87ad;
+  background: rgba(93,135,173,.25);
+  color: #b9dcfa;
+}
+
+.spire-track i.is-current {
   border-color: #b9dcfa;
+  background: #7fb6e6;
+  color: #0e1a26;
+  box-shadow: 0 0 10px rgba(127,182,230,.7);
 }
 
-.hero-willLabel {
+.spire-track i.is-ultimate {
+  border-color: var(--gold);
+}
+
+.spire-track i.is-ultimate.is-current {
+  background: var(--gold-light);
+  box-shadow: 0 0 12px rgba(232,212,156,.8);
+}
+
+.btn-ultimate:not(:disabled) {
+  border-color: var(--gold);
+  color: var(--gold-light);
+  box-shadow: 0 0 12px rgba(232,212,156,.45);
+}
+
+.will-pool {
+  display: grid;
+  justify-items: center;
+  font-family: 'Cinzel', Georgia, serif;
+  font-weight: 700;
+  font-size: 1.3em;
+  color: #9cc8f0;
+}
+
+.will-pool small {
   font-family: 'Alegreya Sans SC', 'Alegreya', sans-serif;
-  font-size: .7em;
+  font-size: .5em;
   letter-spacing: .08em;
   color: var(--muted);
 }
@@ -466,10 +497,28 @@ h2 {
   box-shadow: 0 0 0 2px #7fc27a, 0 0 16px rgba(127,194,122,.55);
 }
 
-.hand-full {
-  margin-left: 1em;
-  color: var(--danger);
-  font-family: 'Alegreya Sans SC', 'Alegreya', sans-serif;
+/* Paiement en Volonté : choix des cartes à défausser */
+.hand-card.is-paying {
+  transform: translateY(-14px);
+}
+
+.hand-card.is-paying .card {
+  box-shadow: 0 0 0 3px var(--gold-light), 0 0 20px rgba(232,212,156,.7);
+}
+
+.hand-card.is-payable .card {
+  box-shadow: 0 0 0 2px #7fb6e6;
+}
+
+.hand-card.is-chosen .card {
+  box-shadow: 0 0 0 3px var(--danger), 0 0 16px rgba(208,96,79,.6);
+  filter: brightness(.7);
+}
+
+.versus {
+  align-self: center;
+  font-size: 2em;
+  color: var(--gold-light);
 }
 
 /* Terrain */
@@ -480,6 +529,7 @@ h2 {
 }
 
 .board-row {
+  position: relative;
   min-height: 0;
   display: flex;
   align-items: center;
@@ -506,8 +556,77 @@ h2 {
   box-shadow: 0 0 0 2px #7fc27a, 0 0 14px rgba(127,194,122,.5);
 }
 
+/* Carte inclinée (a attaqué) : tournée d'un quart de tour */
+.board-card {
+  transition: transform .2s, margin .2s;
+}
+
+.board-card.is-exhausted {
+  transform: rotate(90deg);
+  margin-inline: 25px;
+}
+
 .board-card.is-exhausted .card {
-  filter: saturate(.55) brightness(.8);
+  filter: saturate(.7) brightness(.85);
+}
+
+.board-count {
+  position: absolute;
+  right: 1em;
+  top: .5em;
+  font-family: 'Alegreya Sans SC', 'Alegreya', sans-serif;
+  font-size: .8em;
+  letter-spacing: .06em;
+  color: var(--muted);
+}
+
+/* Zone Imagination (à gauche de chaque terrain) */
+.imagination {
+  position: absolute;
+  left: 1em;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  justify-items: center;
+  gap: .3em;
+  padding: .4em .5em .5em;
+  border: 1px dashed rgba(127,182,230,.4);
+  border-radius: 10px;
+  background: rgba(20,32,44,.35);
+}
+
+.imagination-cards {
+  display: flex;
+  gap: .35em;
+  min-height: 134px;
+  align-items: center;
+}
+
+.imagination-empty {
+  width: 96px;
+  text-align: center;
+  color: rgba(239,230,210,.25);
+  font-size: .85em;
+}
+
+.imagination-card {
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  cursor: default;
+}
+
+.imagination-card.is-playable {
+  cursor: pointer;
+}
+
+.imagination-card.is-playable .card {
+  box-shadow: 0 0 0 2px #7fc27a, 0 0 12px rgba(127,194,122,.5);
+}
+
+.imagination-card.is-waiting .card {
+  filter: grayscale(.5) brightness(.75);
 }
 
 .board-card.is-selected {

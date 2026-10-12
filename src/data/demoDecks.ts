@@ -25,8 +25,8 @@ const C = {
   monolithe: card({ id: 'base-11', name: 'Monolithe de l’entre-monde', type: 'Dessin légendaire', color: 'Violet', rarity: 'Légendaire', spire: 6, text: 'Il se tient là où deux réalités se touchent.' }),
   // Personnages supplémentaires (démo uniquement) pour que les decks aient de quoi combattre.
   eclaireur: card({ id: 'demo-1', name: 'Éclaireur des marches', type: 'Personnage', color: 'Bleu', spire: 1, attack: 1, health: 2, text: 'Toujours le premier à franchir la frontière.' }),
-  gardienne: card({ id: 'demo-2', name: 'Gardienne de l’archive', type: 'Personnage', color: 'Violet', spire: 4, attack: 3, health: 5, text: 'Rien ne sort sans son accord.' }),
-  golem: card({ id: 'demo-3', name: 'Golem d’argile vive', type: 'Personnage', color: 'Marron', spire: 5, attack: 5, health: 5, text: 'Façonné d’un seul geste.' }),
+  gardienne: card({ id: 'demo-2', name: 'Gardienne de l’archive', type: 'Personnage', color: 'Violet', spire: 3, attack: 3, health: 5, unique: true, text: '<b>Unique.</b> Rien ne sort sans son accord.' }),
+  golem: card({ id: 'demo-3', name: 'Golem d’argile vive', type: 'Personnage', color: 'Marron', spire: 4, attack: 5, health: 5, text: 'Façonné d’un seul geste.' }),
   esquisse: card({ id: 'demo-4', name: 'Esquisse animée', type: 'Jeton', color: 'Gris', spire: 0, attack: 1, health: 1, text: '' }),
 };
 

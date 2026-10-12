@@ -3,9 +3,9 @@
 Application à installer (Windows, macOS, Linux) pour jouer à **Gwendalavir’s Battle**, le TCG.
 Les decks se construisent dans le [deckbuilder](https://ceadust.github.io/Gwendalavirs-Battle/), puis s’importent ici.
 
-Version actuelle : **0.1**, la base du logiciel.
+Version actuelle : **0.2**.
 - Partie locale à deux joueurs sur le même ordinateur.
-- Les règles sont génériques, en attendant les vraies.
+- Règles de base du jeu ; les effets des cartes s’appliquent encore à la main (clic droit).
 
 ## Ce qui marche déjà
 
@@ -14,42 +14,40 @@ Version actuelle : **0.1**, la base du logiciel.
   - choix d’un deck (2 decks de démonstration fournis) ;
   - import de decks exportés par le deckbuilder (*Exporter → Logiciel de jeu (.json)*). Ils restent enregistrés d’une partie à l’autre.
 - **Plateau** :
-  - Héros et PV, Volonté (cristaux), deck, défausse ;
-  - main, terrain de chaque joueur ;
+  - Héros et PV, échelle de spire (0 à 6), deck, défausse ;
+  - Zone Imagination, main, terrain de chaque joueur ;
   - journal de la partie ;
   - grande carte au survol.
-- **Jouer** :
-  - clic sur une carte de la main pour la jouer (elle coûte sa Volonté) ;
-  - clic sur une de ses cartes, puis sur une cible (carte adverse ou Héros adverse) pour attaquer.
+- **Jouer une carte** : clic dessus. Si elle coûte de la Volonté, on clique ensuite les cartes de la main à défausser pour payer.
+- **Dessin** : un clic propose de le lancer, ou de le poser en Zone Imagination en faisant monter ou descendre la spire d’un cran.
+- **Attaquer** : clic sur un de ses Alliés, puis sur une cible (Allié adverse ou Héros adverse). Le défenseur choisit de répliquer ou non.
+- **Ultimate** : bouton près de l’échelle de spire, actif à la spire 6.
 - **Bac à sable (clic droit)** sert à appliquer à la main les effets pas encore programmés :
   - dégâts, soins, ATK / PV ;
-  - Volonté ;
+  - spire, Volonté générée ;
   - pioche ;
-  - déplacer une carte (main, terrain, défausse, deck) ;
+  - déplacer une carte ;
   - abandonner.
 - **Annuler** la dernière action (bouton ou Ctrl+Z).
 - **Écran « passe l’ordinateur »** entre les tours, pour ne pas voir la main de l’autre.
 
-## Règles provisoires
+## Règles
 
 Toutes les valeurs sont dans [`src/engine/rules.ts`](src/engine/rules.ts) : modifie-les, le jeu suit.
 
-| Règle | Valeur actuelle |
+| Règle | Fonctionnement |
 |---|---|
-| Main de départ | 5 cartes (+1 pour le second joueur) |
-| Volonté | 1 au premier tour, +1 par tour, maximum 10 |
-| Pioche | 1 carte par tour (pas au tout premier tour) |
-| Main maximale | 10 cartes : une carte piochée au-delà est défaussée |
-| Terrain | 7 cartes maximum par joueur |
-| Héros | PV de la carte Héros, ou 20 par défaut |
-| Combat | Le défenseur riposte, une carte attaque une fois par tour, pas le tour où elle arrive |
-| Deck vide | Fatigue : 1, puis 2, puis 3… dégâts au Héros |
-| Victoire | Héros adverse à 0 PV (ou abandon) |
-
-Ce que fait chaque Type de carte se règle dans le même fichier (`TYPE_BEHAVIOUR`) :
-- **Personnage / Jeton** vont sur le terrain et combattent ;
-- **Objet** va sur le terrain sans combattre ;
-- **Dessins** : effet immédiat, puis défausse.
+| Victoire | Faire tomber les PV du Héros adverse à 0 |
+| Main | 5 cartes au départ. En fin de tour, on défausse toute sa main et on pioche 5 cartes |
+| Début du tour | Toutes ses cartes se redressent |
+| Volonté | Coût d’une carte : 1 Volonté = 1 autre carte de la main défaussée. La Volonté générée par des effets se dépense en premier |
+| Spire | Échelle de 0 à 6. Poser un Dessin en Zone Imagination : +1 ou −1 au choix (les effets se gèrent au clic droit) |
+| Zone Imagination | Visible. Une carte posée ne peut être jouée qu’à partir du tour suivant. En fin de tour, 2 cartes maximum (on choisit lesquelles garder) |
+| Dessins | Lancés : effet, puis défausse. Le journal rappelle la spire au moment du lancement (bonus de spire parfaite) |
+| Alliés | 3 maximum. Ne peuvent pas attaquer le tour où ils arrivent. Une attaque les incline. Un Allié incliné ne peut pas répliquer |
+| Objets | Illimités, ne combattent pas et ne peuvent pas être attaqués |
+| Unique | Une carte « unique » (case du Card Studio) ne peut pas être deux fois sur le terrain du même joueur |
+| Ultimate | Jouable à la spire 6 |
 
 ## Lancer le projet (développeurs)
 

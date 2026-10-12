@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react';
 import type { Action, CardDef, GameState, PlayerIndex, Target } from '../engine/types';
-import { applyAction, attackOf, behaviourOf, cannotAttackReason, cannotPlayReason, defOf, healthOf, other } from '../engine/game';
+import { applyAction, attackOf, canRiposte, cannotAttackReason, cannotImagineReason, cannotPlayReason, cannotUltimateReason, cardsToPay, categoryOf, defOf, healthOf, isAlly, other } from '../engine/game';
 import { RULES } from '../engine/rules';
 import { CardBack, CardView, type CardStats } from './CardView';
 import { ContextMenu, type MenuItem } from './ContextMenu';
@@ -15,6 +15,7 @@ interface Props {
 
 const HAND_SIZE = 138;
 const BOARD_SIZE = 124;
+const IMAGINATION_SIZE = 96;
 const INSPECT_SIZE = 300;
 const HISTORY_LIMIT = 100;
 
@@ -26,6 +27,10 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
   const [toast, setToast] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
   const [discardOf, setDiscardOf] = useState<PlayerIndex | null>(null);
+  // Étapes à plusieurs clics : paiement en Volonté, choix de réplique, tri de l'Imagination.
+  const [paying, setPaying] = useState<{ uid: string; chosen: string[] } | null>(null);
+  const [riposteAsk, setRiposteAsk] = useState<{ attacker: string; defender: string } | null>(null);
+  const [trimImagination, setTrimImagination] = useState<string[] | null>(null);
   // Le joueur actif est toujours en bas de l'écran. En mode « passe l'ordinateur »,
   // sa main reste cachée jusqu'au clic sur l'écran de passage.
   const [revealedFor, setRevealedFor] = useState<PlayerIndex | null>(null);
@@ -57,14 +62,17 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
   const endTurn = useCallback(() => {
     if (state.phase !== 'playing') return;
     setSelected(null);
+    setPaying(null);
+    if (state.players[state.active].imagination.length > RULES.imaginationLimit) return setTrimImagination([]);
     dispatch({ type: 'END_TURN' });
-  }, [dispatch, state.phase]);
+  }, [dispatch, state]);
 
   // Changement de joueur : on oublie la carte inspectée (elle pourrait venir de la main
   // de l'autre joueur) et l'attaquant sélectionné.
   useEffect(() => {
     setInspected(null);
     setSelected(null);
+    setPaying(null);
   }, [state.active]);
 
   // La sélection d'attaquant n'a plus de sens si la carte a quitté le terrain.
@@ -76,7 +84,7 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement) return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
-      else if (e.key === 'Escape') { setSelected(null); setMenu(null); setDiscardOf(null); }
+      else if (e.key === 'Escape') { setSelected(null); setMenu(null); setDiscardOf(null); setPaying(null); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -93,13 +101,61 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
 
   const attack = (target: Target) => {
     if (!selected) return;
-    if (dispatch({ type: 'ATTACK', attacker: selected, target })) setSelected(null);
+    // Le défenseur choisit de répliquer, s'il le peut.
+    if (target.kind === 'card' && isAlly(state, target.uid) && canRiposte(state, target.uid)) {
+      setRiposteAsk({ attacker: selected, defender: target.uid });
+      return;
+    }
+    if (dispatch({ type: 'ATTACK', attacker: selected, target, riposte: false })) setSelected(null);
   };
 
-  const clickHandCard = (uid: string) => {
+  const answerRiposte = (riposte: boolean) => {
+    if (!riposteAsk) return;
+    dispatch({ type: 'ATTACK', attacker: riposteAsk.attacker, target: { kind: 'card', uid: riposteAsk.defender }, riposte });
+    setRiposteAsk(null);
+    setSelected(null);
+  };
+
+  /** Jouer une carte : si elle coûte des cartes de la main, on passe en mode paiement. */
+  const startPlay = (uid: string) => {
     const reason = cannotPlayReason(state, uid);
     if (reason) return showToast(reason);
-    dispatch({ type: 'PLAY_CARD', uid });
+    if (cardsToPay(state, uid) === 0) dispatch({ type: 'PLAY_CARD', uid, payWith: [] });
+    else setPaying({ uid, chosen: [] });
+  };
+
+  const togglePayment = (uid: string) => {
+    if (!paying || uid === paying.uid) return;
+    const chosen = paying.chosen.includes(uid) ? paying.chosen.filter(u => u !== uid) : [...paying.chosen, uid];
+    if (chosen.length === cardsToPay(state, paying.uid)) {
+      dispatch({ type: 'PLAY_CARD', uid: paying.uid, payWith: chosen });
+      setPaying(null);
+    } else setPaying({ ...paying, chosen });
+  };
+
+  const clickHandCard = (e: ReactMouseEvent, uid: string) => {
+    if (paying) return togglePayment(uid);
+    setSelected(null);
+    const def = defOf(state, uid);
+    if (categoryOf(def) !== 'drawing' || state.cards[uid].owner !== state.active) return startPlay(uid);
+    // Un Dessin se lance, ou se pose en Zone Imagination pour faire bouger la spire.
+    e.stopPropagation();
+    const spire = state.players[state.active].spire;
+    const playReason = cannotPlayReason(state, uid);
+    const imagineReason = cannotImagineReason(state, uid);
+    openMenu(e, [
+      { label: def.name, header: true },
+      { label: `Lancer (${def.spire} Volonté)`, action: () => startPlay(uid), disabled: !!playReason },
+      { separator: true },
+      { label: `Imagination : spire ${spire} → ${Math.min(RULES.spireMax, spire + 1)}`, action: () => dispatch({ type: 'IMAGINE', uid, direction: 1 }), disabled: !!imagineReason || spire >= RULES.spireMax },
+      { label: `Imagination : spire ${spire} → ${Math.max(RULES.spireMin, spire - 1)}`, action: () => dispatch({ type: 'IMAGINE', uid, direction: -1 }), disabled: !!imagineReason || spire <= RULES.spireMin },
+    ]);
+  };
+
+  const clickImaginationCard = (uid: string) => {
+    if (paying) return showToast('Seules les cartes de ta main servent à payer.');
+    setSelected(null);
+    startPlay(uid);
   };
 
   const clickBoardCard = (uid: string) => {
@@ -132,7 +188,7 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
     const t: Target = { kind: 'card', uid };
     const items: MenuItem[] = [{ label: def.name, header: true }];
     if (card.zone === 'board') {
-      if (behaviourOf(def) === 'unit') {
+      if (categoryOf(def) === 'ally') {
         items.push(
           { label: 'Infliger 1 dégât', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'damage', delta: 1 }) },
           { label: 'Soigner 1 PV', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'damage', delta: -1 }), disabled: card.damage === 0 },
@@ -146,6 +202,7 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
     }
     if (card.zone !== 'hand') items.push({ label: 'Renvoyer en main', action: () => dispatch({ type: 'MOVE', uid, to: 'hand' }) });
     if (card.zone !== 'board') items.push({ label: 'Poser sur le terrain (gratuit)', action: () => dispatch({ type: 'MOVE', uid, to: 'board' }) });
+    if (card.zone !== 'imagination') items.push({ label: 'Poser en Imagination (sans bouger la spire)', action: () => dispatch({ type: 'MOVE', uid, to: 'imagination' }) });
     if (card.zone !== 'discard') items.push({ label: 'Défausser', action: () => dispatch({ type: 'MOVE', uid, to: 'discard' }) });
     items.push({ label: 'Remettre sur le deck', action: () => dispatch({ type: 'MOVE', uid, to: 'deck' }) });
     openMenu(e, items);
@@ -157,8 +214,10 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
       { label: `Héros de ${state.players[player].name}`, header: true },
       { label: 'Infliger 1 dégât', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'damage', delta: 1 }) },
       { label: 'Soigner 1 PV', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'damage', delta: -1 }) },
-      { label: '+1 Volonté', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'will', delta: 1 }) },
-      { label: '−1 Volonté', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'will', delta: -1 }) },
+      { label: 'Spire +1', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'spire', delta: 1 }) },
+      { label: 'Spire −1', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'spire', delta: -1 }) },
+      { label: 'Générer 1 Volonté', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'will', delta: 1 }) },
+      { label: 'Retirer 1 Volonté générée', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'will', delta: -1 }), disabled: state.players[player].will === 0 },
       { label: 'Piocher une carte', action: () => dispatch({ type: 'DRAW', player }) },
       { separator: true },
       { label: 'Abandonner la partie', danger: true, action: () => dispatch({ type: 'CONCEDE', player }) },
@@ -169,10 +228,32 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
 
   const bottom = viewer;
   const top = other(viewer);
-  const attackableTargets = useMemo(() => new Set(selected ? state.players[other(state.active)].board.filter(uid => behaviourOf(defOf(state, uid)) === 'unit') : []), [selected, state]);
+  const attackableTargets = useMemo(() => new Set(selected ? state.players[other(state.active)].board.filter(uid => isAlly(state, uid)) : []), [selected, state]);
+
+  const renderImagination = (player: PlayerIndex) => (
+    <div className="imagination" title={`Zone Imagination : ${RULES.imaginationLimit} cartes gardées en fin de tour`}>
+      <span className="zone-label">Imagination</span>
+      <div className="imagination-cards">
+        {state.players[player].imagination.length === 0 && <span className="imagination-empty">Vide</span>}
+        {state.players[player].imagination.map(uid => {
+          const playable = player === state.active && !cannotPlayReason(state, uid);
+          const waiting = state.cards[uid].enteredOnTurn === state.turn && player === state.active;
+          return (
+            <button key={uid} className={`imagination-card ${playable ? 'is-playable' : ''} ${waiting ? 'is-waiting' : ''}`}
+              title={waiting ? 'Posée ce tour-ci : jouable au prochain tour' : undefined}
+              onClick={() => player === state.active && clickImaginationCard(uid)} onContextMenu={e => cardMenu(e, uid)} onMouseEnter={() => inspect(uid)}>
+              <CardView def={defOf(state, uid)} size={IMAGINATION_SIZE} />
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 
   const renderBoard = (player: PlayerIndex) => (
     <div className={`board-row ${player === bottom ? 'is-mine' : 'is-theirs'}`}>
+      {renderImagination(player)}
+      <span className="board-count" title="Alliés sur le terrain">Alliés {state.players[player].board.filter(uid => isAlly(state, uid)).length}/{RULES.maxAllies}</span>
       {state.players[player].board.length === 0 && <span className="board-empty">Terrain vide</span>}
       {state.players[player].board.map(uid => {
         const card = state.cards[uid];
@@ -209,13 +290,21 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
             {p.heroHealth}
           </span>
         </button>
-        <div className="hero-will" title={`Volonté : ${p.will} disponible sur ${p.maxWill}`}>
-          <span className="hero-willValue">{p.will}<small>/{p.maxWill}</small></span>
-          <span className="hero-willPips">
-            {Array.from({ length: Math.max(p.maxWill, p.will) }, (_, i) => <i key={i} className={i < p.will ? 'on' : ''} />)}
+        <div className="spire" title={`Spire ${p.spire} — ultimate à la spire ${RULES.ultimateSpire}`}>
+          <span className="spire-label">Spire</span>
+          <span className="spire-track">
+            {Array.from({ length: RULES.spireMax - RULES.spireMin + 1 }, (_, i) => RULES.spireMin + i).map(level => (
+              <i key={level} className={`${level === p.spire ? 'is-current' : ''} ${level < p.spire ? 'is-passed' : ''} ${level === RULES.ultimateSpire ? 'is-ultimate' : ''}`}>{level}</i>
+            ))}
           </span>
-          <span className="hero-willLabel">Volonté</span>
+          {player === state.active && (
+            <button className="btn btn-small btn-ultimate" disabled={!!cannotUltimateReason(state, player)} title={cannotUltimateReason(state, player) ?? 'Lancer l’ultimate du Héros'}
+              onClick={() => dispatch({ type: 'ULTIMATE', player })}>
+              {p.ultimateUsed && RULES.ultimateOncePerGame ? 'Ultimate utilisé' : 'Ultimate'}
+            </button>
+          )}
         </div>
+        {p.will > 0 && <div className="will-pool" title="Volonté générée par des effets, utilisable ce tour en plus des cartes de la main">+{p.will}<small>Volonté</small></div>}
         <div className="piles">
           <div className="pile" title="Cartes restantes dans le deck">
             {p.deck.length ? <CardBack size={46} /> : <div className="pile-empty" />}
@@ -247,8 +336,11 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
           <div className="midline">
             <span className="midline-turn">Tour {state.turn} — {state.players[state.active].name}</span>
             <span className="midline-hint">
-              {selected ? 'Choisis une cible : une carte adverse ou le Héros adverse.' : 'Clique une carte de ta main pour la jouer, puis une de tes cartes pour attaquer.'}
+              {paying
+                ? `Paiement de ${defOf(state, paying.uid).name} : choisis encore ${cardsToPay(state, paying.uid) - paying.chosen.length} carte(s) de ta main à défausser.`
+                : selected ? 'Choisis une cible : un Allié adverse ou le Héros adverse.' : 'Clique une carte de ta main pour la jouer, puis un de tes Alliés pour attaquer. Clic droit : outils.'}
             </span>
+            {paying && <button className="btn btn-small" onClick={() => setPaying(null)}>Annuler le paiement</button>}
             <button className="btn btn-small" onClick={undo} disabled={history.length < 2} title="Annuler la dernière action (Ctrl+Z)">Annuler</button>
             <button className="btn btn-primary btn-endTurn" onClick={endTurn} disabled={state.phase !== 'playing'}>Fin du tour</button>
           </div>
@@ -261,14 +353,20 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
             {handHidden
               ? state.players[bottom].hand.map(uid => <CardBack key={uid} size={HAND_SIZE * 0.7} />)
               : state.players[bottom].hand.map(uid => {
-                const playable = bottom === state.active && !cannotPlayReason(state, uid);
+                const playable = !paying && bottom === state.active && (!cannotPlayReason(state, uid) || !cannotImagineReason(state, uid));
+                const classes = [
+                  'hand-card',
+                  playable ? 'is-playable' : '',
+                  paying?.uid === uid ? 'is-paying' : '',
+                  paying && paying.uid !== uid ? 'is-payable' : '',
+                  paying?.chosen.includes(uid) ? 'is-chosen' : '',
+                ].join(' ');
                 return (
-                  <button key={uid} className={`hand-card ${playable ? 'is-playable' : ''}`} onClick={() => clickHandCard(uid)} onContextMenu={e => cardMenu(e, uid)} onMouseEnter={() => inspect(uid)}>
+                  <button key={uid} className={classes} onClick={e => clickHandCard(e, uid)} onContextMenu={e => cardMenu(e, uid)} onMouseEnter={() => inspect(uid)}>
                     <CardView def={defOf(state, uid)} size={HAND_SIZE} />
                   </button>
                 );
               })}
-            {state.players[bottom].hand.length >= RULES.maxHandSize && <span className="hand-full">Main pleine</span>}
           </div>
         </section>
       </main>
@@ -300,6 +398,49 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
             </div>
             <p className="dialog-hint">Clic droit sur une carte pour la récupérer.</p>
             <button className="btn" onClick={() => setDiscardOf(null)}>Fermer</button>
+          </div>
+        </div>
+      )}
+
+      {riposteAsk && (
+        <div className="overlay">
+          <div className="dialog">
+            <h2>{state.players[state.cards[riposteAsk.defender].owner].name}, tu es attaqué !</h2>
+            <p className="dialog-hint">
+              {defOf(state, riposteAsk.attacker).name} ({attackOf(state, riposteAsk.attacker)} ATK) attaque {defOf(state, riposteAsk.defender).name} ({attackOf(state, riposteAsk.defender)} ATK, {healthOf(state, riposteAsk.defender)} PV).
+            </p>
+            <div className="dialog-cards">
+              <CardView def={defOf(state, riposteAsk.attacker)} size={150} stats={statsOf(riposteAsk.attacker)} />
+              <span className="versus">→</span>
+              <CardView def={defOf(state, riposteAsk.defender)} size={150} stats={statsOf(riposteAsk.defender)} />
+            </div>
+            <div className="dialog-buttons">
+              <button className="btn" onClick={() => setRiposteAsk(null)}>Annuler l’attaque</button>
+              <button className="btn" onClick={() => answerRiposte(false)}>Ne pas répliquer</button>
+              <button className="btn btn-primary" onClick={() => answerRiposte(true)}>Répliquer</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {trimImagination && (
+        <div className="overlay">
+          <div className="dialog">
+            <h2>Zone Imagination</h2>
+            <p className="dialog-hint">Choisis les {RULES.imaginationLimit} cartes à garder, les autres seront défaussées.</p>
+            <div className="dialog-cards">
+              {state.players[state.active].imagination.map(uid => (
+                <button key={uid} className={`hand-card ${trimImagination.includes(uid) ? 'is-chosen' : 'is-payable'}`} onMouseEnter={() => inspect(uid)}
+                  onClick={() => setTrimImagination(k => (k!.includes(uid) ? k!.filter(u => u !== uid) : k!.length < RULES.imaginationLimit ? [...k!, uid] : k))}>
+                  <CardView def={defOf(state, uid)} size={130} />
+                </button>
+              ))}
+            </div>
+            <div className="dialog-buttons">
+              <button className="btn" onClick={() => setTrimImagination(null)}>Retour</button>
+              <button className="btn btn-primary" disabled={trimImagination.length !== RULES.imaginationLimit}
+                onClick={() => { dispatch({ type: 'END_TURN', keepImagination: trimImagination }); setTrimImagination(null); }}>Garder et finir le tour</button>
+            </div>
           </div>
         </div>
       )}

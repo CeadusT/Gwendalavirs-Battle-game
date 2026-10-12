@@ -1,7 +1,7 @@
 {
   "name": "gwendalavirs-battle-game",
   "productName": "Gwendalavir's Battle",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Logiciel pour jouer à Gwendalavir's Battle, le TCG.",
   "private": true,
   "main": "electron/main.cjs",

@@ -5,46 +5,51 @@
    ========================================================================== */
 
 export const RULES = {
-  /** Nombre de cartes en main au début de la partie. */
-  startingHand: 5,
-  /** Le second joueur pioche une carte de plus pour compenser. */
-  secondPlayerBonusCards: 1,
-  /** Le premier joueur ne pioche pas à son tout premier tour. */
-  firstPlayerSkipsFirstDraw: true,
-  /** Taille maximale de la main : une carte piochée au-delà est défaussée. */
-  maxHandSize: 10,
-  /** Nombre maximal de cartes sur le terrain par joueur. */
-  boardLimit: 7,
+  /** Cartes piochées en début de partie, puis à chaque fin de tour. */
+  handSize: 5,
+  /** En fin de tour, toute la main est défaussée avant de piocher. */
+  discardHandAtEndOfTurn: true,
+  /** Deck vide : la défausse est mélangée pour former un nouveau deck. */
+  reshuffleDiscardWhenEmpty: true,
 
-  /** Volonté maximale au premier tour, gain par tour et plafond. */
-  startingWill: 1,
-  willPerTurn: 1,
-  maxWill: 10,
+  /** Nombre maximal d'Alliés (Personnages) sur le terrain. Les Objets sont illimités. */
+  maxAllies: 3,
+  /** Un Allié ne peut pas attaquer le tour où il est posé. */
+  summoningSickness: true,
+
+  /** Échelle de spire. */
+  spireMin: 0,
+  spireMax: 6,
+  startingSpire: 0,
+  /** Spire à atteindre pour lancer l'ultimate du Héros. */
+  ultimateSpire: 6,
+  /** L'ultimate ne peut être lancé qu'une fois par partie. */
+  ultimateOncePerGame: true,
+
+  /** Cartes gardées en Zone Imagination à la fin du tour. */
+  imaginationLimit: 2,
+  /** Une carte posée en Imagination ne peut pas être jouée le tour où elle est posée. */
+  imaginationWaitsOneTurn: true,
 
   /** Points de vie du Héros s'il n'en a pas sur sa carte (ou pas de Héros). */
   defaultHeroHealth: 20,
-
-  /** Un Personnage ne peut pas attaquer le tour où il est joué. */
-  summoningSickness: true,
-  /** Le défenseur riposte avec son attaque quand il est attaqué. */
-  defenderStrikesBack: true,
-  /** Piocher dans un deck vide fait perdre des PV au Héros (1, puis 2, puis 3…). */
-  fatigueDamage: true,
 } as const;
 
-/* Ce que fait chaque Type de carte quand on la joue.
-   - 'unit'   : va sur le terrain et peut attaquer (s'il a de l'attaque)
-   - 'object' : va sur le terrain mais n'attaque pas
-   - 'spell'  : effet immédiat, puis défausse (les effets se gèrent à la main pour l'instant)
-   Un Type absent de cette liste est traité comme 'spell'. */
-export const TYPE_BEHAVIOUR: Record<string, 'unit' | 'object' | 'spell'> = {
-  Personnage: 'unit',
-  Jeton: 'unit',
+/* Les 4 grandes catégories de cartes (le Héros est à part).
+   - 'ally'    : Allié — va sur le terrain (3 maximum) et combat
+   - 'object'  : Objet — va sur le terrain (illimité), ne combat pas
+   - 'drawing' : Dessin — effet immédiat puis défausse, ou posé en Zone Imagination
+   Un Type absent de cette liste est traité comme un Dessin. */
+export type Category = 'ally' | 'object' | 'drawing';
+
+export const TYPE_CATEGORY: Record<string, Category> = {
+  Personnage: 'ally',
+  Jeton: 'ally',
   Objet: 'object',
-  'Dessin de base': 'spell',
-  'Dessin avancé': 'spell',
-  'Dessin légendaire': 'spell',
-  'Dessin de base jeton': 'spell',
+  'Dessin de base': 'drawing',
+  'Dessin avancé': 'drawing',
+  'Dessin légendaire': 'drawing',
+  'Dessin de base jeton': 'drawing',
 };
 
 export const HERO_TYPE = 'Héros';
