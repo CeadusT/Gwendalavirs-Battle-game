@@ -74,9 +74,14 @@ export const CardView = memo(function CardView({ def, size, stats, className = '
             <div className="gw-text" dangerouslySetInnerHTML={{ __html: sanitizeRichText(def.text) }} />
           </div>
           <div className="gw-foot">
-            {def.showAttack ? <span className={`gw-stat gw-stat--attack${statClass(attack, stats?.baseAttack)}`} title="Attaque"><AttackIcon />{attack}</span> : <span />}
             <span className="gw-set">{def.set}</span>
-            {def.showHealth ? <span className={`gw-stat gw-stat--health${statClass(health, stats?.baseHealth)}`} title="Points de vie"><HealthIcon />{health}</span> : <span />}
+            {(def.showAttack || def.showHealth) && (
+              <span className="gw-stats">
+                {def.showAttack && <span className={`gw-stat gw-stat--attack${statClass(attack, stats?.baseAttack)}`} title="Attaque"><AttackIcon />{attack}</span>}
+                {def.showAttack && def.showHealth && <i className="gw-statSep" aria-hidden="true" />}
+                {def.showHealth && <span className={`gw-stat gw-stat--health${statClass(health, stats?.baseHealth)}`} title="Points de vie"><HealthIcon />{health}</span>}
+              </span>
+            )}
           </div>
         </div>
       </div>
