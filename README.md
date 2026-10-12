@@ -18,9 +18,9 @@ Version actuelle : **0.2**.
   - Zone Imagination, main, terrain de chaque joueur ;
   - journal de la partie ;
   - grande carte au survol.
-- **Jouer une carte** : clic dessus. Si elle coûte de la Volonté, on clique ensuite les cartes de la main à défausser pour payer.
-- **Dessin** : un clic propose de le lancer, ou de le poser en Zone Imagination en faisant monter ou descendre la spire d’un cran.
-- **Attaquer** : clic sur un de ses Alliés, puis sur une cible (Allié adverse ou Héros adverse). Le défenseur choisit de répliquer ou non.
+- **Jouer une carte** : la glisser sur son terrain (ou cliquer dessus). Si elle coûte de la Volonté, elle est posée face cachée, puis on clique les cartes de la main à défausser pour payer ; elle n’est révélée qu’une fois payée.
+- **Dessin** : le glisser sur le terrain pour le lancer, ou dans la Zone Imagination pour faire monter ou descendre la spire d’un cran.
+- **Attaquer** : glisser un de ses Alliés sur une cible (ou cliquer l’Allié puis la cible) (Allié adverse ou Héros adverse). Le défenseur choisit de répliquer ou non.
 - **Ultimate** : bouton près de l’échelle de spire, actif à la spire 6 (la spire redescend ensuite à 0).
 - **Bac à sable (clic droit)** sert à appliquer à la main les effets pas encore programmés :
   - dégâts, soins, ATK / PV ;

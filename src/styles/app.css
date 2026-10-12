@@ -968,3 +968,55 @@ h2 {
     margin-left: -58px;
   }
 }
+
+/* ---------- Glisser-déposer ---------- */
+
+.hand-card[draggable="true"],
+.board-card[draggable="true"],
+.imagination-card[draggable="true"] {
+  cursor: grab;
+}
+
+.board-row.is-drop {
+  box-shadow: inset 0 0 0 2px rgba(127,194,122,.55);
+  background: rgba(127,194,122,.06);
+}
+
+.imagination.is-drop {
+  border-color: #7fb6e6;
+  border-style: solid;
+  background: rgba(60,100,140,.4);
+  box-shadow: 0 0 16px rgba(127,182,230,.4);
+}
+
+/* Carte posée face cachée en attente de paiement */
+.board-card.is-pending {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.board-card.is-pending .card {
+  box-shadow: 0 0 0 2px var(--gold-light), 0 0 18px rgba(232,212,156,.6);
+  animation: pendingPulse 1.2s ease-in-out infinite alternate;
+}
+
+.pending-label {
+  position: absolute;
+  bottom: -1.5em;
+  font-family: 'Alegreya Sans SC', 'Alegreya', sans-serif;
+  font-size: .8em;
+  letter-spacing: .08em;
+  color: var(--gold-light);
+}
+
+@keyframes pendingPulse {
+  to { box-shadow: 0 0 0 2px var(--gold-light), 0 0 28px rgba(232,212,156,.9); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-card.is-pending .card {
+    animation: none;
+  }
+}
+
