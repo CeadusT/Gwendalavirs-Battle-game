@@ -31,7 +31,7 @@
   },
   "build": {
     "appId": "gg.gwendalavirs.battle",
-    "productName": "Gwendalavir's Battle",
+    "productName": "Gwendalavirs Battle",
     "directories": {
       "output": "release"
     },
@@ -60,6 +60,8 @@
         "from": "src/assets/fonts/LICENCE.txt",
         "to": "LICENCE-polices.txt"
       }
-    ]
-  }
+    ],
+    "artifactName": "Gwendalavirs-Battle-${version}-${os}.${ext}"
+  },
+  "author": "CeadusT"
 }

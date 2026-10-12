@@ -229,10 +229,23 @@ h2 {
   grid-template-columns: minmax(0, 1fr) 330px;
 }
 
+@media (max-width: 1300px) {
+  .game {
+    grid-template-columns: minmax(0, 1fr) 280px;
+  }
+
+  .inspect .card {
+    --size: 250px !important;
+  }
+}
+
+
 .table {
   min-width: 0;
+  overflow: hidden;
   min-height: 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr) auto;
   background: radial-gradient(ellipse at 50% 50%, var(--felt) 0%, var(--felt-dark) 85%);
 }
@@ -256,9 +269,26 @@ h2 {
 /* Héros, Volonté, deck et défausse */
 .hero {
   flex: 0 0 auto;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto auto;
   align-items: center;
-  gap: .8em;
+  column-gap: .9em;
+  row-gap: .45em;
+}
+
+.hero .spire {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.hero .piles {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.hero .will-pool {
+  grid-column: 2;
+  grid-row: 2;
 }
 
 .hero-plate {
@@ -332,9 +362,9 @@ h2 {
 
 /* Échelle de spire (0 à 6) */
 .spire {
-  display: grid;
-  justify-items: center;
-  gap: .25em;
+  display: flex;
+  align-items: center;
+  gap: .5em;
 }
 
 .spire-label,
@@ -393,8 +423,9 @@ h2 {
 }
 
 .will-pool {
-  display: grid;
-  justify-items: center;
+  display: flex;
+  align-items: baseline;
+  gap: .3em;
   font-family: 'Cinzel', Georgia, serif;
   font-weight: 700;
   font-size: 1.3em;
@@ -481,7 +512,7 @@ h2 {
 }
 
 .hand--mine .hand-card + .hand-card {
-  margin-left: -24px;
+  margin-left: -34px;
 }
 
 .hand--mine .hand-card:hover {
@@ -525,6 +556,7 @@ h2 {
 .battlefield {
   min-height: 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
 }
 
@@ -678,8 +710,10 @@ h2 {
 /* ---------- Panneau latéral : carte en grand + journal ---------- */
 
 .sidebar {
+  min-width: 0;
   min-height: 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: .8em;
   padding: .9em;
@@ -690,12 +724,12 @@ h2 {
 .inspect {
   display: grid;
   place-items: center;
-  min-height: 419px;
 }
 
 .inspect-empty {
-  width: 300px;
-  height: 419px;
+  width: 100%;
+  max-width: 300px;
+  aspect-ratio: 300 / 419;
   display: grid;
   place-items: center;
   padding: 2em;
@@ -899,4 +933,38 @@ h2 {
 .pass h2 {
   margin: 0 0 .8em;
   font-size: 2.4em;
+}
+
+/* Fenêtres basses : petites cartes en Imagination pour ne pas déborder sur la ligne du milieu. */
+@media (max-height: 820px) {
+  .imagination-card .card {
+    --size: 64px !important;
+  }
+
+  .imagination-cards {
+    min-height: 90px;
+  }
+
+  .imagination-empty {
+    width: 64px;
+  }
+
+  .inspect .card {
+    --size: 230px !important;
+  }
+}
+
+/* Fenêtres étroites : main un peu plus petite pour qu'elle tienne en entier. */
+@media (max-width: 1300px) {
+  .hand--mine .hand-card .card {
+    --size: 116px !important;
+  }
+
+  .hand--mine {
+    min-height: 170px;
+  }
+
+  .hand--mine .hand-card + .hand-card {
+    margin-left: -58px;
+  }
 }
