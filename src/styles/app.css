@@ -1,0 +1,783 @@
+/* ==========================================================================
+   Interface du jeu : menu, plateau, panneau latéral, fenêtres.
+   ========================================================================== */
+
+:root {
+  --bg: #0f0d0a;
+  --felt: #1b2420;
+  --felt-dark: #121915;
+  --panel: #19150f;
+  --panel-light: #241e15;
+  --line: rgba(201,164,92,.28);
+  --gold: #c9a45c;
+  --gold-light: #e8d49c;
+  --text: #efe6d2;
+  --muted: #a99b80;
+  --danger: #d0604f;
+  --ok: #7fc27a;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Alegreya', Georgia, serif;
+  font-size: 16px;
+  overflow: hidden;
+  user-select: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+h1,
+h2 {
+  font-family: 'Cinzel', Georgia, serif;
+  font-weight: 700;
+  color: var(--gold-light);
+}
+
+/* ---------- Boutons et champs ---------- */
+
+.btn {
+  padding: .55em 1.1em;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-light);
+  cursor: pointer;
+  font-family: 'Alegreya Sans SC', 'Alegreya', sans-serif;
+  font-weight: 700;
+  letter-spacing: .05em;
+  transition: background .12s, border-color .12s;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--gold);
+  background: #2f271b;
+}
+
+.btn:disabled {
+  opacity: .4;
+  cursor: default;
+}
+
+.btn-primary {
+  border-color: var(--gold);
+  background: linear-gradient(180deg, #c9a45c, #9a7a3a);
+  color: #1a140b;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #e0bd72, #b08c45);
+}
+
+.btn-small {
+  padding: .35em .8em;
+  font-size: .85em;
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+  text-align: left;
+}
+
+.field {
+  display: grid;
+  gap: .3em;
+}
+
+.field span {
+  font-family: 'Alegreya Sans SC', 'Alegreya', sans-serif;
+  color: var(--muted);
+  letter-spacing: .05em;
+}
+
+.field input,
+.field select {
+  padding: .5em .7em;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #100d09;
+  color: var(--text);
+  font: inherit;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: .5em;
+  cursor: pointer;
+}
+
+/* ---------- Menu ---------- */
+
+.menu {
+  height: 100%;
+  overflow: auto;
+  padding: 3em 2em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2em;
+  background: radial-gradient(ellipse at 50% 0%, #2a2216 0%, var(--bg) 70%);
+}
+
+.menu-title {
+  text-align: center;
+}
+
+.menu-title h1 {
+  margin: 0;
+  font-size: 2.6em;
+  letter-spacing: .04em;
+}
+
+.menu-title p {
+  margin: .4em 0 0;
+  color: var(--muted);
+}
+
+.menu-players {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 420px));
+  gap: 1.5em;
+}
+
+.menu-player {
+  display: grid;
+  gap: 1em;
+  padding: 1.4em;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+}
+
+.menu-deck {
+  display: flex;
+  gap: 1em;
+  align-items: flex-start;
+}
+
+.menu-noHero {
+  width: 150px;
+  height: 210px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--muted);
+}
+
+.menu-deckInfo {
+  display: grid;
+  gap: .35em;
+  color: var(--muted);
+}
+
+.menu-deckInfo strong {
+  color: var(--text);
+}
+
+.menu-actions {
+  display: grid;
+  justify-items: center;
+  gap: 1em;
+}
+
+.menu-buttons {
+  display: flex;
+  gap: 1em;
+}
+
+.menu-message {
+  margin: 0;
+  max-width: 60ch;
+  text-align: center;
+  color: var(--gold-light);
+}
+
+.menu-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: .9em;
+}
+
+/* ---------- Écran de jeu ---------- */
+
+.game {
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+}
+
+.table {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: radial-gradient(ellipse at 50% 50%, var(--felt) 0%, var(--felt-dark) 85%);
+}
+
+.side {
+  display: flex;
+  align-items: center;
+  gap: 1.2em;
+  padding: .6em 1.2em;
+  background: rgba(0,0,0,.25);
+}
+
+.side--top {
+  border-bottom: 1px solid var(--line);
+}
+
+.side--bottom {
+  border-top: 1px solid var(--line);
+}
+
+/* Héros, Volonté, deck et défausse */
+.hero {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: .8em;
+}
+
+.hero-plate {
+  --hero-el: #7d8288;
+  position: relative;
+  width: 190px;
+  padding: .5em .8em .5em 1em;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: .6em;
+  align-items: center;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--hero-el);
+  border-radius: 10px;
+  background: var(--panel);
+  cursor: default;
+}
+
+.hero.is-active .hero-plate {
+  border-color: var(--gold);
+  border-left-color: var(--hero-el);
+  box-shadow: 0 0 0 1px rgba(201,164,92,.35), 0 0 18px rgba(201,164,92,.25);
+}
+
+.hero.is-target .hero-plate {
+  cursor: crosshair;
+  border-color: var(--danger);
+  box-shadow: 0 0 0 2px var(--danger), 0 0 22px rgba(208,96,79,.5);
+}
+
+.hero-name {
+  font-family: 'Cinzel', Georgia, serif;
+  font-weight: 700;
+  color: var(--gold-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hero-title {
+  grid-row: 2;
+  font-size: .78em;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hero-health {
+  grid-row: 1 / 3;
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: .2em;
+  font-family: 'Cinzel', Georgia, serif;
+  font-weight: 700;
+  font-size: 1.6em;
+}
+
+.hero-health svg {
+  width: .8em;
+  height: .8em;
+  fill: #e07a6e;
+}
+
+.hero-health.is-hurt {
+  color: #ff9d8f;
+}
+
+.hero-will {
+  display: grid;
+  justify-items: center;
+  gap: .15em;
+  min-width: 74px;
+}
+
+.hero-willValue {
+  font-family: 'Cinzel', Georgia, serif;
+  font-weight: 700;
+  font-size: 1.35em;
+  color: #9cc8f0;
+}
+
+.hero-willValue small {
+  font-size: .6em;
+  color: var(--muted);
+}
+
+.hero-willPips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3px;
+  max-width: 80px;
+}
+
+.hero-willPips i {
+  width: 8px;
+  height: 8px;
+  transform: rotate(45deg);
+  border: 1px solid #5d87ad;
+  background: transparent;
+}
+
+.hero-willPips i.on {
+  background: #7fb6e6;
+  border-color: #b9dcfa;
+}
+
+.hero-willLabel {
+  font-family: 'Alegreya Sans SC', 'Alegreya', sans-serif;
+  font-size: .7em;
+  letter-spacing: .08em;
+  color: var(--muted);
+}
+
+.piles {
+  display: flex;
+  gap: .5em;
+}
+
+.pile {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.pile > span {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  min-width: 22px;
+  padding: 1px 5px;
+  border: 1px solid var(--gold);
+  border-radius: 10px;
+  background: #120f0b;
+  font-family: 'Cinzel', Georgia, serif;
+  font-weight: 700;
+  font-size: .75em;
+  text-align: center;
+}
+
+.pile-empty {
+  width: 46px;
+  height: 64px;
+  border: 1px dashed var(--line);
+  border-radius: 4px;
+}
+
+/* Mains */
+.hand {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4em;
+}
+
+.hand--theirs {
+  gap: 0;
+}
+
+.hand--theirs .card + .card {
+  margin-left: -28px;
+}
+
+.hand--mine {
+  min-height: 200px;
+}
+
+.hand-card,
+.board-card {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  transition: transform .12s;
+}
+
+.hand-card {
+  cursor: pointer;
+}
+
+.hand--mine .hand-card + .hand-card {
+  margin-left: -24px;
+}
+
+.hand--mine .hand-card:hover {
+  z-index: 2;
+  transform: translateY(-14px) scale(1.04);
+}
+
+.hand-card .card {
+  box-shadow: 0 .4em 1.2em rgba(0,0,0,.6);
+}
+
+.hand-card.is-playable .card {
+  box-shadow: 0 0 0 2px #7fc27a, 0 0 16px rgba(127,194,122,.55);
+}
+
+.hand-full {
+  margin-left: 1em;
+  color: var(--danger);
+  font-family: 'Alegreya Sans SC', 'Alegreya', sans-serif;
+}
+
+/* Terrain */
+.battlefield {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.board-row {
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .8em;
+  padding: .6em 1em;
+}
+
+.board-empty {
+  color: rgba(239,230,210,.25);
+  font-family: 'Alegreya Sans SC', 'Alegreya', sans-serif;
+  letter-spacing: .1em;
+}
+
+.board-card {
+  cursor: default;
+}
+
+.board-card.is-ready {
+  cursor: pointer;
+}
+
+.board-card.is-ready .card {
+  box-shadow: 0 0 0 2px #7fc27a, 0 0 14px rgba(127,194,122,.5);
+}
+
+.board-card.is-exhausted .card {
+  filter: saturate(.55) brightness(.8);
+}
+
+.board-card.is-selected {
+  transform: translateY(-10px);
+}
+
+.board-card.is-selected .card {
+  box-shadow: 0 0 0 3px var(--gold-light), 0 0 22px rgba(232,212,156,.75);
+}
+
+.board-card.is-target {
+  cursor: crosshair;
+}
+
+.board-card.is-target .card {
+  box-shadow: 0 0 0 2px var(--danger), 0 0 18px rgba(208,96,79,.6);
+}
+
+.midline {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  padding: .45em 1.2em;
+  border-block: 1px solid var(--line);
+  background: rgba(0,0,0,.3);
+}
+
+.midline-turn {
+  font-family: 'Cinzel', Georgia, serif;
+  font-weight: 700;
+  color: var(--gold-light);
+  white-space: nowrap;
+}
+
+.midline-hint {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--muted);
+  font-size: .9em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-endTurn {
+  min-width: 130px;
+}
+
+/* ---------- Panneau latéral : carte en grand + journal ---------- */
+
+.sidebar {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: .8em;
+  padding: .9em;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.inspect {
+  display: grid;
+  place-items: center;
+  min-height: 419px;
+}
+
+.inspect-empty {
+  width: 300px;
+  height: 419px;
+  display: grid;
+  place-items: center;
+  padding: 2em;
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.log {
+  min-height: 0;
+  margin: 0;
+  padding: .5em .6em .5em 1.8em;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #100d09;
+  font-size: .85em;
+  line-height: 1.4;
+  user-select: text;
+}
+
+.log li {
+  margin: .15em 0;
+  color: var(--muted);
+}
+
+.log li::marker {
+  color: rgba(169,155,128,.4);
+}
+
+.log .log-turn {
+  color: var(--gold-light);
+  margin-top: .5em;
+}
+
+.log .log-play {
+  color: var(--text);
+}
+
+.log .log-attack,
+.log .log-damage {
+  color: #f0b3a8;
+}
+
+.log .log-destroy {
+  color: #c98a80;
+}
+
+.log .log-manual {
+  font-style: italic;
+}
+
+.log .log-end {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.sidebar-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ---------- Message, menu contextuel et fenêtres ---------- */
+
+.toast {
+  position: fixed;
+  left: calc((100% - 330px) / 2);
+  bottom: 230px;
+  transform: translateX(-50%);
+  z-index: 50;
+  max-width: 520px;
+  padding: .6em 1.1em;
+  border: 1px solid var(--danger);
+  border-radius: 10px;
+  background: rgba(26,15,12,.95);
+  box-shadow: 0 8px 24px rgba(0,0,0,.6);
+  pointer-events: none;
+}
+
+.ctxmenu {
+  position: fixed;
+  z-index: 60;
+  min-width: 210px;
+  padding: .35em;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #1d1811;
+  box-shadow: 0 12px 30px rgba(0,0,0,.7);
+}
+
+.ctxmenu-header {
+  padding: .35em .6em .45em;
+  font-family: 'Cinzel', Georgia, serif;
+  font-weight: 700;
+  font-size: .85em;
+  color: var(--gold-light);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: .25em;
+}
+
+.ctxmenu button {
+  display: block;
+  width: 100%;
+  padding: .4em .6em;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ctxmenu button:hover:not(:disabled) {
+  background: #2f271b;
+}
+
+.ctxmenu button:disabled {
+  opacity: .35;
+  cursor: default;
+}
+
+.ctxmenu button.is-danger {
+  color: #ff9d8f;
+}
+
+.ctxmenu hr {
+  margin: .25em 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: rgba(5,4,3,.72);
+  backdrop-filter: blur(3px);
+}
+
+.overlay--pass {
+  background: rgba(5,4,3,.92);
+}
+
+.dialog {
+  max-width: min(1000px, 92vw);
+  max-height: 88vh;
+  overflow: auto;
+  padding: 1.5em 1.8em;
+  display: grid;
+  gap: 1em;
+  justify-items: center;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: 0 20px 60px rgba(0,0,0,.7);
+}
+
+.dialog h2 {
+  margin: 0;
+}
+
+.dialog-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .6em;
+}
+
+.dialog-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: .9em;
+}
+
+.dialog-buttons {
+  display: flex;
+  gap: .8em;
+}
+
+.dialog--end p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.pass {
+  display: grid;
+  justify-items: center;
+  gap: .4em;
+  text-align: center;
+}
+
+.pass p {
+  margin: 0;
+  color: var(--muted);
+  font-family: 'Alegreya Sans SC', 'Alegreya', sans-serif;
+  letter-spacing: .1em;
+}
+
+.pass h2 {
+  margin: 0 0 .8em;
+  font-size: 2.4em;
+}

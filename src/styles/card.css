@@ -1,0 +1,496 @@
+/* ==========================================================================
+   Cartes — copie de la section « Cartes » du deckbuilder (css/styles.css).
+   Garder les deux synchronisées si la charte graphique évolue.
+   ========================================================================== */
+
+/* Charte graphique v2 — style normal (« Enluminure ») et full art.
+   Toutes les tailles sont en em : la police de base de la carte vaut 16 px pour une
+   carte de 315 px de large (--size), donc tout suit le zoom de la bibliothèque.
+   Variables posées par cardMarkup() : --el (élément), --el-light, --el-tint,
+   --sky-top / --sky-bottom (fond quand il n'y a pas d'illustration). */
+
+.card {
+  position: relative;
+  width: var(--size);
+  height: calc(var(--size)*1.396825);
+  font-size: calc(var(--size)*.050794);
+  border-radius: calc(var(--size)*.0476);
+  overflow: hidden;
+  user-select: none;
+  background: #15110c;
+  box-shadow: 0 .4em 1.2em rgba(0,0,0,.45);
+  transition: transform .1s,box-shadow .1s;
+}
+
+.card:hover {
+  box-shadow: 0 .5em 1.5em rgba(0,0,0,.6),0 0 0 1px rgba(232,212,156,.35);
+}
+
+.gw {
+  position: relative;
+  height: 100%;
+  box-sizing: border-box;
+  padding: .4375em;
+  background: #15110c;
+  color: #241c13;
+  font-family: 'Alegreya',Georgia,serif;
+}
+
+.gw--hero {
+  background: linear-gradient(160deg,#e8d49c,#8a6a2f 55%,#c9a45c);
+}
+
+.gw-body {
+  position: relative;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: .625em;
+  border: 1px solid #c9a45c;
+  background: #efe6d2;
+}
+
+.gw--hero .gw-body {
+  border-color: #fff3cf;
+}
+
+/* Illustration */
+.gw-art {
+  position: relative;
+  flex: 0 0 15.5em;
+  overflow: hidden;
+  background-color: var(--sky-bottom);
+  background-image: linear-gradient(180deg,var(--sky-top),var(--sky-bottom) 78%);
+  background-size: cover;
+  background-position: center;
+}
+
+.gw-placeholder {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.gw-shade {
+  display: none;
+}
+
+/* Bandeau du titre : coût, nom, élément */
+.gw-head {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 3.625em;
+  box-sizing: border-box;
+  padding: 0 .5625em;
+  display: flex;
+  align-items: center;
+  gap: .5em;
+  background: linear-gradient(180deg,rgba(13,11,8,.92) 0%,rgba(13,11,8,.72) 62%,rgba(13,11,8,0) 100%);
+  z-index: 2;
+}
+
+.gw-cost {
+  /* font-size 1.125em : les dimensions ci-dessous sont relatives à cette taille. */
+  flex: 0 0 2em;
+  width: 2em;
+  height: 2em;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: .111em solid #c9a45c;
+  background: radial-gradient(circle at 35% 30%,#3a3127,#120f0b 75%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cinzel',Georgia,serif;
+  font-weight: 700;
+  font-size: 1.125em;
+  color: #f3e6c4;
+  line-height: 1;
+}
+
+.gw-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  text-align: center;
+  font-family: 'Cinzel',Georgia,serif;
+  font-weight: 600;
+  line-height: 1.12;
+  color: #f6ecd2;
+  text-shadow: 0 1px 3px rgba(0,0,0,.8);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
+}
+
+.gw-el {
+  flex: 0 0 2.125em;
+  width: 2.125em;
+  height: 2.125em;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: .125em solid #e9d9a8;
+  background: var(--el);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gw-el svg {
+  width: 1.125em;
+  height: 1.125em;
+  fill: none;
+  stroke: #fffaf0;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Ligne de Type et texte de règles */
+.gw-rules {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.gw-type {
+  flex: 0 0 1.625em;
+  box-sizing: border-box;
+  padding: 0 .75em;
+  display: flex;
+  align-items: center;
+  gap: .375em;
+  min-width: 0;
+  background: var(--el-tint);
+  border-top: .125em solid var(--el);
+  border-bottom: 1px solid #b89a5e;
+  font-family: 'Alegreya Sans SC','Alegreya',sans-serif;
+  letter-spacing: .08em;
+  color: #2a2117;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.gw-typeName,
+.gw-subtype {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gw-subtype {
+  color: #5a4a35;
+}
+
+.gw-sep {
+  color: #5a4a35;
+}
+
+.gw-rarity {
+  flex: 0 0 .5625em;
+  width: .5625em;
+  height: .5625em;
+  margin-left: auto;
+  transform: rotate(45deg);
+  border: 1px solid rgba(0,0,0,.35);
+}
+
+.gw-text {
+  flex: 1 1 auto;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: .625em .94em .375em;
+  line-height: 1.36;
+  color: #241c13;
+  background: linear-gradient(180deg,#f2eadb,#e8ddc5);
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.gw-text b,
+.gw-text strong {
+  font-weight: 700;
+}
+
+/* Pied de carte : attaque · set · points de vie */
+.gw-foot {
+  flex: 0 0 2em;
+  box-sizing: border-box;
+  padding: 0 .5em .25em;
+  display: grid;
+  grid-template-columns: 3.625em minmax(0,1fr) 3.625em;
+  align-items: center;
+  background: #e8ddc5;
+}
+
+.gw-stat {
+  /* font-size .8125em : hauteur ≈ 24 px sur une carte de 315 px. */
+  height: 1.846em;
+  box-sizing: border-box;
+  border-radius: .923em;
+  border: .11em solid #c9a45c;
+  background: #1a1610;
+  color: #f6ecd2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .25em;
+  font-family: 'Cinzel',Georgia,serif;
+  font-weight: 700;
+  font-size: .8125em;
+  line-height: 1;
+}
+
+.gw-stat--health {
+  border-color: #c8645a;
+}
+
+.gw-statIcon {
+  width: 1em;
+  height: 1em;
+  fill: none;
+  stroke: #e8d49c;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.gw-stat--health .gw-statIcon {
+  fill: #e07a6e;
+  stroke: none;
+}
+
+.gw-set {
+  text-align: center;
+  font-family: 'Alegreya Sans SC','Alegreya',sans-serif;
+  font-size: .5625em;
+  letter-spacing: .06em;
+  color: #6d5d45;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Full art : l'illustration couvre toute la carte ---------- */
+
+.gw--full {
+  padding: 0;
+  color: #f3ead6;
+}
+
+.gw--full .gw-body {
+  border: 0;
+  border-radius: 0;
+  background: #0d0b08;
+}
+
+.gw--full .gw-body::after {
+  content: "";
+  position: absolute;
+  inset: .4375em;
+  z-index: 4;
+  border-radius: .625em;
+  border: 1px solid rgba(232,212,156,.35);
+  pointer-events: none;
+}
+
+.gw--full.gw--hero .gw-body::after {
+  border-color: rgba(232,212,156,.85);
+}
+
+.gw--full .gw-art {
+  position: absolute;
+  inset: 0;
+}
+
+.gw--full .gw-placeholder {
+  height: 72%;
+}
+
+.gw--full .gw-shade {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(180deg,rgba(8,7,5,.78) 0%,rgba(8,7,5,.35) 12%,rgba(8,7,5,0) 21%),
+    linear-gradient(0deg,rgba(8,7,5,.94) 0%,rgba(8,7,5,.86) 27%,rgba(8,7,5,.4) 43%,rgba(8,7,5,0) 53%);
+}
+
+.gw--full .gw-head {
+  top: .5em;
+  padding: 0 1em;
+  background: none;
+}
+
+.gw--full .gw-cost {
+  border-width: .083em;
+  border-color: #e8d49c;
+  background: rgba(10,9,7,.6);
+}
+
+.gw--full .gw-name {
+  text-align: left;
+  color: #fbf3df;
+  letter-spacing: .02em;
+  text-shadow: 0 1px 4px rgba(0,0,0,.9);
+}
+
+.gw--full .gw-el {
+  border: 0;
+  background: none;
+}
+
+.gw--full .gw-el svg {
+  width: 1.375em;
+  height: 1.375em;
+  stroke: var(--el-light);
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,.9));
+}
+
+.gw--full .gw-rules {
+  position: absolute;
+  z-index: 2;
+  left: 1.125em;
+  right: 1.125em;
+  bottom: 2.75em;
+  height: 9.375em;
+  gap: .5em;
+}
+
+.gw--full .gw-type {
+  flex: 0 0 auto;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--el-light);
+}
+
+.gw--full .gw-type::after {
+  content: "";
+  order: 1;
+  flex: 1 1 auto;
+  min-width: .5em;
+  height: 1px;
+  background: linear-gradient(90deg,var(--el-light),rgba(255,255,255,0));
+}
+
+.gw--full .gw-subtype,
+.gw--full .gw-sep {
+  color: var(--el-light);
+}
+
+.gw--full .gw-rarity {
+  order: 2;
+  margin-left: 0;
+  border: 0;
+}
+
+.gw--full .gw-text {
+  padding: 0;
+  background: none;
+  color: #f1e8d4;
+  text-shadow: 0 1px 2px rgba(0,0,0,.6);
+}
+
+.gw--full .gw-text b,
+.gw--full .gw-text strong {
+  color: #e8d49c;
+}
+
+/* Le texte « sombre » de la palette resterait invisible sur le fond sombre du full art. */
+.gw--full .gw-text [style*="rgb(32, 36, 40)"] {
+  color: #f1e8d4 !important;
+}
+
+.gw--full .gw-foot {
+  position: absolute;
+  z-index: 2;
+  left: 1em;
+  right: 1em;
+  bottom: .875em;
+  height: 1.625em;
+  padding: 0;
+  background: none;
+}
+
+.gw--full .gw-stat {
+  border-width: 1px;
+  border-color: rgba(232,212,156,.8);
+  background: rgba(10,9,7,.55);
+  color: #fbf3df;
+}
+
+.gw--full .gw-stat--health {
+  border-color: rgba(224,122,110,.85);
+}
+
+.gw--full .gw-set {
+  color: rgba(241,232,212,.6);
+}
+
+/* ---------- Ajouts propres au jeu ---------- */
+
+/* Petites cartes (main, terrain) : planchers de lisibilité, comme le mode compact du deckbuilder. */
+.card--small {
+  --card-min-font: 7px;
+  --card-name-min: 8px;
+}
+
+.card--small .gw-set {
+  visibility: hidden;
+}
+
+.card--small .gw-text {
+  -webkit-mask-image: linear-gradient(to bottom,#000 70%,transparent);
+  mask-image: linear-gradient(to bottom,#000 70%,transparent);
+}
+
+/* Statistiques modifiées en partie */
+.gw-stat.is-lower {
+  color: #ff8a7a;
+}
+
+.gw-stat.is-higher {
+  color: #9fe39a;
+}
+
+/* Dos de carte */
+.card-back {
+  background: #15110c;
+}
+
+.card-backInner {
+  position: absolute;
+  inset: .4375em;
+  border-radius: .625em;
+  border: 1px solid #c9a45c;
+  background:
+    radial-gradient(circle at 50% 50%,rgba(201,164,92,.28),rgba(201,164,92,0) 58%),
+    repeating-linear-gradient(45deg,#1d1810 0 .5em,#241d13 .5em 1em);
+  display: grid;
+  place-items: center;
+}
+
+.card-backInner span {
+  width: 4.5em;
+  height: 4.5em;
+  border-radius: 50%;
+  border: .125em solid #c9a45c;
+  display: grid;
+  place-items: center;
+  font-family: 'Cinzel',Georgia,serif;
+  font-weight: 700;
+  font-size: 1.25em;
+  color: #e8d49c;
+  background: #120f0b;
+}
+
