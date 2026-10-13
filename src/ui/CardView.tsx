@@ -26,6 +26,16 @@ const HealthIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true" className="gw-statIcon"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z" /></svg>
 );
 
+/** Famille visuelle : Dessin légendaire (cadre prismatique) ou autre Dessin (losange et plume). */
+export function cardKind(def: CardDef): '' | 'drawing' | 'legend' {
+  if (!/dessin/i.test(def.type)) return '';
+  return /légendaire/i.test(def.type) ? 'legend' : 'drawing';
+}
+
+const Quill = () => (
+  <svg className="gw-quill" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4c-7 0-12 4-14 11l-1 5 4-2c7-2 11-7 11-14ZM5 20l7-7" /></svg>
+);
+
 const statClass = (value: number, base: number | undefined) =>
   base === undefined || value === base ? '' : value < base ? ' is-lower' : ' is-higher';
 
@@ -33,6 +43,7 @@ const statClass = (value: number, base: number | undefined) =>
 export const CardView = memo(function CardView({ def, size, stats, className = '' }: Props) {
   const pal = cardPalette(def);
   const isHero = def.type === 'Héros';
+  const kind = cardKind(def);
   const element = COLORS[def.color] ?? COLORS.Gris;
   const vars = {
     '--size': `${size}px`, '--el': pal.el, '--el-light': pal.light, '--el-tint': pal.tint,
@@ -43,7 +54,7 @@ export const CardView = memo(function CardView({ def, size, stats, className = '
 
   return (
     <div className={`card ${size < 170 ? 'card--small ' : ''}${className}`} style={vars}>
-      <div className={`gw ${def.fullArt ? 'gw--full' : 'gw--normal'}${isHero ? ' gw--hero' : ''}`}>
+      <div className={`gw ${def.fullArt ? 'gw--full' : 'gw--normal'}${isHero ? ' gw--hero' : ''}${kind ? ` gw--${kind}` : ''}`}>
         <div className="gw-body">
           <div className="gw-art" style={def.image ? { backgroundImage: `url("${def.image.replace(/["\\\n\r]/g, '')}")` } : undefined}>
             {!def.image && (
@@ -57,7 +68,7 @@ export const CardView = memo(function CardView({ def, size, stats, className = '
           </div>
           <div className="gw-shade" aria-hidden="true" />
           <div className="gw-head">
-            {def.showSpire && <div className="gw-cost" title="Coût en Volonté">{def.spire}</div>}
+            {def.showSpire && <div className="gw-cost" title="Coût en Volonté"><span>{def.spire}</span></div>}
             <h3 className="gw-name" style={{ fontSize: `max(var(--card-name-min,0px),${nameSizeEm(def.name, def.fullArt)}em)` }}>{def.name}</h3>
             {!isHero && (
               <div className="gw-el" title={`Élément ${element.element}`}>
@@ -67,6 +78,7 @@ export const CardView = memo(function CardView({ def, size, stats, className = '
           </div>
           <div className="gw-rules">
             <div className="gw-type">
+              {kind === 'drawing' && <Quill />}
               <span className="gw-typeName">{def.type}</span>
               {def.subtype && <><span className="gw-sep">·</span><span className="gw-subtype">{def.subtype}</span></>}
               <span className="gw-rarity" style={{ background: RARITY_COLORS[def.rarity] ?? RARITY_COLORS.Commun }} title={`Rareté ${def.rarity}`} />
