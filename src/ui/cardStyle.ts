@@ -36,6 +36,11 @@ export function cardPalette(c: CardDef) {
     hillFar: mixColor(el, '#2a2f3a', 0.32),
     hillMid: mixColor(el, '#151821', 0.55),
     hillNear: mixColor(el, '#08090c', 0.78),
+    // Encre des Dessins : la couleur de l'élément, foncée.
+    pale: mixColor(el, '#ffffff', 0.72),
+    inkDark: mixColor(el, '#0d0c10', 0.72),
+    inkMid: mixColor(el, '#141218', 0.5),
+    inkLight: mixColor(el, '#1a171d', 0.3),
   };
 }
 

@@ -48,6 +48,7 @@ export const CardView = memo(function CardView({ def, size, stats, className = '
   const vars = {
     '--size': `${size}px`, '--el': pal.el, '--el-light': pal.light, '--el-tint': pal.tint,
     '--sky-top': pal.skyTop, '--sky-bottom': pal.skyBottom,
+    '--el-pale': pal.pale, '--ink-dark': pal.inkDark, '--ink-mid': pal.inkMid, '--ink-light': pal.inkLight,
   } as CSSProperties;
   const attack = stats?.attack ?? def.attack;
   const health = stats?.health ?? def.health;
