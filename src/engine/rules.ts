@@ -39,6 +39,7 @@ export const RULES = {
 } as const;
 
 /* Les 4 grandes catégories de cartes (le Héros est à part).
+   Une carte dont le Sous-type contient « Equipement Héroïque » est toujours une arme (Objet).
    - 'ally'    : Allié — va sur le terrain (3 maximum) et combat
    - 'object'  : Objet — va sur le terrain (3 maximum), ne combat pas
    - 'drawing' : Dessin — effet immédiat puis défausse, ou posé en Zone Imagination
@@ -46,9 +47,12 @@ export const RULES = {
 export type Category = 'ally' | 'object' | 'drawing';
 
 export const TYPE_CATEGORY: Record<string, Category> = {
+  Allié: 'ally',
   Personnage: 'ally',
   Jeton: 'ally',
   Objet: 'object',
+  'Objet légendaire': 'object',
+  Dessin: 'drawing',
   'Dessin de base': 'drawing',
   'Dessin avancé': 'drawing',
   'Dessin légendaire': 'drawing',

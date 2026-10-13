@@ -33,7 +33,7 @@ export function normalizeCard(raw: Partial<CardDef> & Record<string, unknown>): 
     showHealth: raw.showHealth === undefined ? isCharacter || type === HERO_TYPE : raw.showHealth !== false,
     showSpire: raw.showSpire === undefined ? !AUTO_HIDE_SPIRE_TYPES.has(type) : raw.showSpire !== false,
     fullArt: raw.fullArt === true,
-    unique: raw.unique === true,
+    unique: raw.unique === true || /\bUnique\b/i.test(String(raw.subtype ?? '')),
     image: typeof raw.image === 'string' && raw.image ? raw.image : undefined,
   };
 }

@@ -3,7 +3,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 export type MenuItem =
   | { label: string; header: true }
   | { separator: true }
-  | { label: string; action: () => void; disabled?: boolean; danger?: boolean };
+  | { label: string; action: () => void; disabled?: boolean; danger?: boolean; title?: string };
 
 interface Props {
   x: number;
@@ -29,7 +29,7 @@ export function ContextMenu({ x, y, items, onClose }: Props) {
         if ('separator' in item) return <hr key={i} />;
         if ('header' in item) return <div key={i} className="ctxmenu-header">{item.label}</div>;
         return (
-          <button key={i} role="menuitem" className={item.danger ? 'is-danger' : ''} disabled={item.disabled} onClick={() => { item.action(); onClose(); }}>
+          <button key={i} role="menuitem" className={item.danger ? 'is-danger' : ''} disabled={item.disabled} title={item.title} onClick={() => { item.action(); onClose(); }}>
             {item.label}
           </button>
         );

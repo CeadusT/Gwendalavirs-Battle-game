@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent as ReactDragEvent, type MouseEvent as ReactMouseEvent } from 'react';
-import type { Action, CardDef, GameState, PlayerIndex, Target } from '../engine/types';
-import { alliesOf, applyAction, attackOf, objectsOf, canRiposte, cannotAttackReason, cannotImagineReason, cannotPlayReason, cannotUltimateReason, cardsToPay, categoryOf, defOf, healthOf, isAlly, other } from '../engine/game';
+import type { Action, CardDef, GameState, PlayerIndex, Status, Target } from '../engine/types';
+import { HERO_ATTACKER } from '../engine/types';
+import { KEYWORDS, KEYWORD_HELP } from '../engine/keywords';
+import { alliesOf, applyAction, attackOf, cannotTargetReason, hasKeyword, heroAttackOf, objectsOf, statusActive, canRiposte, cannotAttackReason, cannotImagineReason, cannotPlayReason, cannotUltimateReason, cardsToPay, categoryOf, defOf, healthOf, isAlly, other } from '../engine/game';
 import { RULES } from '../engine/rules';
 import { CardBack, CardView, type CardStats } from './CardView';
 import { ContextMenu, type MenuItem } from './ContextMenu';
@@ -19,6 +21,13 @@ const IMAGINATION_SIZE = 96;
 const INSPECT_SIZE = 300;
 const HISTORY_LIMIT = 100;
 
+const STATUS_LABELS: Record<Status, string> = { surchauffe: 'Surchauffe', brulure: 'Brûlure', brulureSpire: 'Brûlure de Spire' };
+const STATUS_HELP: Record<Status, string> = {
+  surchauffe: 'Pas de Dessin Feu à son prochain tour.',
+  brulure: 'Ne peut pas se soigner à son prochain tour.',
+  brulureSpire: 'Chaque carte jouée depuis l’Imagination lui inflige 1 blessure.',
+};
+
 export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
   const [history, setHistory] = useState<GameState[]>([initial]);
   const state = history[history.length - 1];
@@ -32,7 +41,7 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
   const [riposteAsk, setRiposteAsk] = useState<{ attacker: string; defender: string } | null>(null);
   const [trimImagination, setTrimImagination] = useState<string[] | null>(null);
   // Carte en cours de glisser-déposer, et d'où elle vient.
-  const [drag, setDrag] = useState<{ uid: string; from: 'hand' | 'imagination' | 'board' } | null>(null);
+  const [drag, setDrag] = useState<{ uid: string; from: 'hand' | 'imagination' | 'board' | 'hero' } | null>(null);
   // Le joueur actif est toujours en bas de l'écran. En mode « passe l'ordinateur »,
   // sa main reste cachée jusqu'au clic sur l'écran de passage.
   const [revealedFor, setRevealedFor] = useState<PlayerIndex | null>(null);
@@ -79,7 +88,7 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
 
   // La sélection d'attaquant n'a plus de sens si la carte a quitté le terrain.
   useEffect(() => {
-    if (selected && state.cards[selected]?.zone !== 'board') setSelected(null);
+    if (selected && selected !== HERO_ATTACKER && state.cards[selected]?.zone !== 'board') setSelected(null);
   }, [selected, state]);
 
   useEffect(() => {
@@ -103,10 +112,10 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
 
   const attack = (target: Target, attacker = selected) => {
     if (!attacker) return;
-    const reason = cannotAttackReason(state, attacker);
+    const reason = cannotAttackReason(state, attacker) ?? cannotTargetReason(state, target);
     if (reason) return showToast(reason);
     // Le défenseur choisit de répliquer, s'il le peut.
-    if (target.kind === 'card' && isAlly(state, target.uid) && canRiposte(state, target.uid)) {
+    if (target.kind === 'card' && isAlly(state, target.uid) && canRiposte(state, target.uid, attacker)) {
       setRiposteAsk({ attacker, defender: target.uid });
       return;
     }
@@ -174,10 +183,11 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
 
   /* ---------- Glisser-déposer ---------- */
 
-  type DragFrom = 'hand' | 'imagination' | 'board';
+  type DragFrom = 'hand' | 'imagination' | 'board' | 'hero';
   const canDrag = (uid: string, from: DragFrom) =>
-    !paying && !handHidden && state.phase === 'playing' && state.cards[uid].owner === state.active
-    && (from !== 'board' || !cannotAttackReason(state, uid));
+    !paying && !handHidden && state.phase === 'playing'
+    && (from === 'hero' || state.cards[uid].owner === state.active)
+    && (from !== 'board' && from !== 'hero' || !cannotAttackReason(state, uid));
 
   const dragSource = (uid: string, from: DragFrom) => ({
     draggable: canDrag(uid, from),
@@ -211,7 +221,7 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
 
   const toMyBoard = (d: { from: DragFrom }) => d.from === 'hand' || d.from === 'imagination';
   const toImagination = (d: { uid: string; from: DragFrom }) => d.from === 'hand' && categoryOf(defOf(state, d.uid)) === 'drawing';
-  const toAttack = (d: { from: DragFrom }) => d.from === 'board';
+  const toAttack = (d: { from: DragFrom }) => d.from === 'board' || d.from === 'hero';
 
   const clickImaginationCard = (uid: string) => {
     if (paying) return showToast('Seules les cartes de ta main servent à payer.');
@@ -233,6 +243,12 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
   };
 
   const clickHero = (player: PlayerIndex) => {
+    if (player === state.active && !paying) {
+      if (selected === HERO_ATTACKER) return setSelected(null);
+      const reason = cannotAttackReason(state, HERO_ATTACKER);
+      if (reason) return showToast(reason);
+      return setSelected(HERO_ATTACKER);
+    }
     if (player !== state.active && selected) attack({ kind: 'hero', player });
   };
 
@@ -249,7 +265,12 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
     const t: Target = { kind: 'card', uid };
     const items: MenuItem[] = [{ label: def.name, header: true }];
     if (card.zone === 'board') {
-      if (categoryOf(def) === 'ally') {
+      items.push(
+        { label: card.exhausted ? 'Désengager' : 'Utiliser son effet {T} (engager)', action: () => dispatch({ type: 'TAP', target: t, mode: card.exhausted ? 'disengage' : 'use' }) },
+      );
+      if (!card.exhausted) items.push({ label: 'Engager sans effet', action: () => dispatch({ type: 'TAP', target: t, mode: 'engage' }) });
+      items.push({ separator: true });
+      if (isAlly(state, uid) || categoryOf(def) === 'object') {
         items.push(
           { label: 'Infliger 1 dégât', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'damage', delta: 1 }) },
           { label: 'Soigner 1 PV', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'damage', delta: -1 }), disabled: card.damage === 0 },
@@ -260,6 +281,12 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
           { separator: true },
         );
       }
+      // Mots-clés : ajouter / retirer (effets de cartes pas encore programmés).
+      for (const k of KEYWORDS) {
+        const on = hasKeyword(state, uid, k);
+        items.push({ label: `${on ? '✓' : '+'} ${k}`, title: KEYWORD_HELP[k], action: () => dispatch({ type: 'KEYWORD', uid, keyword: k, on: !on }) });
+      }
+      items.push({ separator: true });
     }
     if (card.zone !== 'hand') items.push({ label: 'Renvoyer en main', action: () => dispatch({ type: 'MOVE', uid, to: 'hand' }) });
     if (card.zone !== 'board') items.push({ label: 'Poser sur le terrain (gratuit)', action: () => dispatch({ type: 'MOVE', uid, to: 'board' }) });
@@ -273,13 +300,26 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
     const t: Target = { kind: 'hero', player };
     openMenu(e, [
       { label: `Héros de ${state.players[player].name}`, header: true },
-      { label: 'Infliger 1 dégât', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'damage', delta: 1 }) },
+      { label: 'Infliger 1 blessure', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'damage', delta: 1 }) },
       { label: 'Soigner 1 PV', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'damage', delta: -1 }) },
+      { label: '+1 bouclier', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'shields', delta: 1 }) },
+      { label: '−1 bouclier', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'shields', delta: -1 }), disabled: state.players[player].shields === 0 },
+      { label: '+1 ATK au Héros (jusqu’à la fin du tour)', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'heroAttack', delta: 1 }) },
+      { label: '−1 ATK au Héros', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'heroAttack', delta: -1 }) },
+      state.players[player].heroExhausted
+        ? { label: 'Désengager le Héros', action: () => dispatch({ type: 'TAP', target: t, mode: 'disengage' }) }
+        : { label: 'Utiliser l’effet {T} du Héros (engager)', action: () => dispatch({ type: 'TAP', target: t, mode: 'use' }) },
+      { separator: true },
       { label: 'Spire +1', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'spire', delta: 1 }) },
       { label: 'Spire −1', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'spire', delta: -1 }) },
       { label: 'Générer 1 Volonté', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'will', delta: 1 }) },
       { label: 'Retirer 1 Volonté générée', action: () => dispatch({ type: 'ADJUST', target: t, stat: 'will', delta: -1 }), disabled: state.players[player].will === 0 },
       { label: 'Piocher une carte', action: () => dispatch({ type: 'DRAW', player }) },
+      { separator: true },
+      ...(['surchauffe', 'brulure', 'brulureSpire'] as Status[]).map(st => {
+        const on = statusActive(state, player, st);
+        return { label: `${on ? 'Retirer' : 'Appliquer'} ${STATUS_LABELS[st]}`, title: STATUS_HELP[st], action: () => dispatch({ type: 'STATUS', player, status: st, on: !on }) };
+      }),
       { separator: true },
       { label: 'Abandonner la partie', danger: true, action: () => dispatch({ type: 'CONCEDE', player }) },
     ]);
@@ -287,9 +327,18 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
 
   /* ---------- Affichage ---------- */
 
+  const attackerName = (a: string) => (a === HERO_ATTACKER ? `Le Héros de ${state.players[state.active].name}` : defOf(state, a).name);
+  const attackerPower = (a: string) => (a === HERO_ATTACKER ? heroAttackOf(state, state.active) : attackOf(state, a));
+
   const bottom = viewer;
   const top = other(viewer);
-  const attackableTargets = useMemo(() => new Set(selected ? state.players[other(state.active)].board.filter(uid => isAlly(state, uid)) : []), [selected, state]);
+  // Cibles possibles (Provocation prise en compte) pendant qu'un attaquant est choisi ou glissé.
+  const aiming = !!selected || drag?.from === 'board' || drag?.from === 'hero';
+  const attackableTargets = useMemo(
+    () => new Set(aiming ? state.players[other(state.active)].board.filter(uid => !cannotTargetReason(state, { kind: 'card', uid })) : []),
+    [aiming, state],
+  );
+  const heroTargetable = aiming && !cannotTargetReason(state, { kind: 'hero', player: other(state.active) });
 
   const renderImagination = (player: PlayerIndex) => (
     <div className={`imagination ${player === state.active && drag && toImagination(drag) ? 'is-drop' : ''}`} title={`Zone Imagination : ${RULES.imaginationLimit} cartes gardées en fin de tour`}
@@ -329,13 +378,19 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
           ready ? 'is-ready' : '',
           card.exhausted ? 'is-exhausted' : '',
           selected === uid ? 'is-selected' : '',
-          attackableTargets.has(uid) || (drag?.from === 'board' && card.owner !== state.active && isAlly(state, uid)) ? 'is-target' : '',
+          attackableTargets.has(uid) ? 'is-target' : '',
         ].join(' ');
         const enemy = card.owner !== state.active;
         return (
           <button key={uid} className={classes} onClick={() => clickBoardCard(uid)} onContextMenu={e => cardMenu(e, uid)} onMouseEnter={() => inspect(uid)}
-            {...(enemy ? dropTarget(d => toAttack(d) && isAlly(state, uid), (_, attacker) => attack({ kind: 'card', uid }, attacker)) : dragSource(uid, 'board'))}>
+            {...(enemy ? dropTarget(d => toAttack(d) && attackableTargets.has(uid), (_, attacker) => attack({ kind: 'card', uid }, attacker)) : dragSource(uid, 'board'))}>
             <CardView def={defOf(state, uid)} size={BOARD_SIZE} stats={statsOf(uid)} />
+            {(card.keywords.length > 0 || card.eternal) && (
+              <span className="kw-chips">
+                {card.keywords.filter(k => k !== 'Éternel').map(k => <i key={k} title={KEYWORD_HELP[k as keyof typeof KEYWORD_HELP]}>{k}</i>)}
+                {card.eternal && <i className="kw-eternal" title={KEYWORD_HELP['Éternel']}>Éternel</i>}
+              </span>
+            )}
           </button>
         );
       })}
@@ -352,11 +407,14 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
   const renderHero = (player: PlayerIndex) => {
     const p = state.players[player];
     const heroDef = p.heroDefId ? state.defs[p.heroDefId] : null;
-    const isTarget = (!!selected || drag?.from === 'board') && player !== state.active;
+    const isTarget = heroTargetable && player !== state.active;
+    const heroAtk = heroAttackOf(state, player);
+    const canHeroAttack = player === state.active && !cannotAttackReason(state, HERO_ATTACKER);
+    const statuses = (['surchauffe', 'brulure', 'brulureSpire'] as Status[]).filter(st => statusActive(state, player, st));
     return (
-      <div className={`hero ${player === state.active ? 'is-active' : ''} ${isTarget ? 'is-target' : ''}`}>
+      <div className={`hero ${player === state.active ? 'is-active' : ''} ${isTarget ? 'is-target' : ''} ${p.heroExhausted ? 'is-exhausted' : ''} ${canHeroAttack ? 'can-attack' : ''} ${selected === HERO_ATTACKER && player === state.active ? 'is-selected' : ''}`}>
         <button className="hero-plate" onClick={() => clickHero(player)} onContextMenu={e => heroMenu(e, player)}
-          {...(player !== state.active ? dropTarget(toAttack, (_, attacker) => attack({ kind: 'hero', player }, attacker)) : {})}
+          {...(player !== state.active ? dropTarget(d => toAttack(d) && heroTargetable, (_, attacker) => attack({ kind: 'hero', player }, attacker)) : dragSource(HERO_ATTACKER, 'hero'))}
           onMouseEnter={() => heroDef && setInspected({ def: heroDef, stats: { attack: 0, health: p.heroHealth, baseHealth: p.heroMaxHealth } })}
           style={{ '--hero-el': (COLORS[heroDef?.color ?? 'Gris'] ?? COLORS.Gris).hex } as CSSProperties}>
           <span className="hero-name">{p.name}</span>
@@ -365,7 +423,17 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z" /></svg>
             {p.heroHealth}
           </span>
+          <span className="hero-extras">
+            {heroAtk > 0 && <span className="hero-atk" title="ATK du Héros (armes et bonus)">⚔ {heroAtk}</span>}
+            {p.shields > 0 && <span className="hero-shields" title="Boucliers : chacun absorbe 1 blessure">{p.shields} bouclier{p.shields > 1 ? 's' : ''}</span>}
+            {p.heroExhausted && <span className="hero-tapped">Engagé</span>}
+          </span>
         </button>
+        {statuses.length > 0 && (
+          <div className="hero-statuses">
+            {statuses.map(st => <span key={st} className={`status status--${st}`} title={STATUS_HELP[st]}>{STATUS_LABELS[st]}</span>)}
+          </div>
+        )}
         <div className="spire" title={`Spire ${p.spire} — ultimate à la spire ${RULES.ultimateSpire}`}>
           <span className="spire-label">Spire</span>
           <span className="spire-track">
@@ -414,7 +482,7 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
             <span className="midline-hint">
               {paying
                 ? `Paiement : choisis encore ${cardsToPay(state, paying.uid) - paying.chosen.length} carte(s) de ta main à défausser.`
-                : selected ? 'Choisis une cible : un Allié adverse ou le Héros adverse.' : 'Glisse une carte sur le terrain pour la jouer, un Dessin en Imagination, un Allié sur une cible pour attaquer. Clic droit : outils.'}
+                : selected ? `${selected === HERO_ATTACKER ? 'Ton Héros attaque' : 'Attaque'} : choisis une cible (en rouge).` : 'Glisse une carte sur le terrain pour la jouer, un Dessin en Imagination, un Allié sur une cible pour attaquer. Clic droit : outils.'}
             </span>
             {paying && <button className="btn btn-small" onClick={() => setPaying(null)}>Annuler le paiement</button>}
             <button className="btn btn-small" onClick={undo} disabled={history.length < 2} title="Annuler la dernière action (Ctrl+Z)">Annuler</button>
@@ -483,10 +551,12 @@ export function GameScreen({ initial, hotseat, onRematch, onQuit }: Props) {
           <div className="dialog">
             <h2>{state.players[state.cards[riposteAsk.defender].owner].name}, tu es attaqué !</h2>
             <p className="dialog-hint">
-              {defOf(state, riposteAsk.attacker).name} ({attackOf(state, riposteAsk.attacker)} ATK) attaque {defOf(state, riposteAsk.defender).name} ({attackOf(state, riposteAsk.defender)} ATK, {healthOf(state, riposteAsk.defender)} PV).
+              {attackerName(riposteAsk.attacker)} ({attackerPower(riposteAsk.attacker)} ATK) attaque {defOf(state, riposteAsk.defender).name} ({attackOf(state, riposteAsk.defender)} ATK, {healthOf(state, riposteAsk.defender)} PV).
             </p>
             <div className="dialog-cards">
-              <CardView def={defOf(state, riposteAsk.attacker)} size={150} stats={statsOf(riposteAsk.attacker)} />
+              {riposteAsk.attacker === HERO_ATTACKER
+                ? (state.players[state.active].heroDefId ? <CardView def={state.defs[state.players[state.active].heroDefId!]} size={150} /> : <div className="hero-placeholder">Héros</div>)
+                : <CardView def={defOf(state, riposteAsk.attacker)} size={150} stats={statsOf(riposteAsk.attacker)} />}
               <span className="versus">→</span>
               <CardView def={defOf(state, riposteAsk.defender)} size={150} stats={statsOf(riposteAsk.defender)} />
             </div>

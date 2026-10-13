@@ -812,6 +812,8 @@ h2 {
 
 .ctxmenu {
   position: fixed;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
   z-index: 60;
   min-width: 210px;
   padding: .35em;
@@ -1018,5 +1020,128 @@ h2 {
   .board-card.is-pending .card {
     animation: none;
   }
+}
+
+/* ---------- Mots-clés, Héros attaquant, boucliers, états ---------- */
+
+.board-card {
+  position: relative;
+}
+
+.kw-chips {
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px;
+  width: max-content;
+  max-width: 150px;
+  pointer-events: none;
+}
+
+.kw-chips i {
+  padding: 1px 6px;
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  background: #15110c;
+  color: var(--gold-light);
+  font-style: normal;
+  font-family: 'Alegreya Sans SC', 'Alegreya', sans-serif;
+  font-size: .62em;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+.kw-chips i.kw-eternal {
+  border-color: #7fb6e6;
+  color: #b9dcfa;
+}
+
+.board-card.is-exhausted .kw-chips {
+  transform: translateX(-50%) rotate(-90deg);
+}
+
+.hero-extras {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: .6em;
+  font-family: 'Cinzel', Georgia, serif;
+  font-weight: 700;
+  font-size: .8em;
+}
+
+.hero-extras:empty {
+  display: none;
+}
+
+.hero-atk {
+  color: var(--gold-light);
+}
+
+.hero-shields {
+  color: #b9dcfa;
+}
+
+.hero-tapped {
+  font-family: 'Alegreya Sans SC', 'Alegreya', sans-serif;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: .06em;
+}
+
+.hero.can-attack .hero-plate {
+  cursor: pointer;
+  box-shadow: 0 0 0 2px #7fc27a, 0 0 14px rgba(127,194,122,.45);
+}
+
+.hero.is-selected .hero-plate {
+  box-shadow: 0 0 0 3px var(--gold-light), 0 0 20px rgba(232,212,156,.7);
+}
+
+.hero.is-exhausted .hero-plate {
+  filter: saturate(.6) brightness(.85);
+}
+
+.hero-statuses {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.status {
+  padding: 1px 7px;
+  border-radius: 8px;
+  font-family: 'Alegreya Sans SC', 'Alegreya', sans-serif;
+  font-size: .72em;
+  letter-spacing: .05em;
+  border: 1px solid;
+}
+
+.status--surchauffe {
+  border-color: #e0864f;
+  color: #ffb98a;
+  background: rgba(224,134,79,.15);
+}
+
+.status--brulure,
+.status--brulureSpire {
+  border-color: var(--danger);
+  color: #ff9d8f;
+  background: rgba(208,96,79,.15);
+}
+
+.hero-placeholder {
+  width: 150px;
+  height: 210px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
 }
 

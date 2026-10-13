@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { applyAction, cannotAttackReason, cannotPlayReason, cannotUltimateReason, createGame, healthOf } from './game';
+import { alliesOf, applyAction, canRiposte, cannotAttackReason, cannotPlayReason, cannotUltimateReason, createGame, healthOf, heroAttackOf, statusActive } from './game';
 import { normalizeCard, parseDeckFile, DECK_FILE_FORMAT } from './cards';
 import { RULES } from './rules';
 import type { Action, CardDef, DeckList, GameState } from './types';
+import { HERO_ATTACKER } from './types';
 import { DEMO_DECKS } from '../data/demoDecks';
 
 function act(state: GameState, action: Action): GameState {
@@ -112,7 +113,7 @@ describe('combat', () => {
     const s = act(start, { type: 'ATTACK', attacker: a, target: { kind: 'card', uid: b }, riposte: true });
     expect(healthOf(s, b)).toBe(3);
     expect(healthOf(s, a)).toBe(1);
-    expect(cannotAttackReason(s, a)).toMatch(/incliné/);
+    expect(cannotAttackReason(s, a)).toMatch(/engagé/);
   });
 
   it('ou de ne pas répliquer', () => {
@@ -188,5 +189,128 @@ describe('fichier deck', () => {
     expect(deck.hero?.health).toBe(25);
     expect(deck.cards[0].card.unique).toBe(true);
     expect(() => parseDeckFile({ cards: [] })).toThrow();
+  });
+});
+
+/* ---------- Mots-clés, Héros, boucliers, Éternels, états ---------- */
+
+/** Pose des cartes directement (sans payer) pour préparer une situation de combat. */
+function setupBoards(mine: CardDef[], theirs: CardDef[], filler = ally({ id: 'f', name: 'Recrue' })) {
+  let s = game(deckOf(...mine.map(c => [c, 1] as [CardDef, number]), [filler, 20]), deckOf(...theirs.map(c => [c, 1] as [CardDef, number]), [filler, 20]));
+  const place = (player: 0 | 1, names: string[]) => {
+    for (const name of names) {
+      const uid = Object.values(s.cards).find(c => c.owner === player && c.zone !== 'board' && s.defs[c.defId].name === name)!.uid;
+      s = act(s, { type: 'MOVE', uid, to: 'board' });
+    }
+  };
+  place(0, mine.map(c => c.name));
+  place(1, theirs.map(c => c.name));
+  // Laisse passer un tour complet pour que tout le monde puisse attaquer.
+  if (s.active !== 0) s = endTurn(s);
+  s = endTurn(endTurn(s));
+  const uidOf = (name: string) => Object.values(s.cards).find(c => c.zone === 'board' && s.defs[c.defId].name === name)!.uid;
+  return { s, uidOf };
+}
+
+describe('types du deckbuilder', () => {
+  it('« Allié » est un Allié, une arme est un Objet', () => {
+    const { s, uidOf } = setupBoards([normalizeCard({ id: 'x', name: 'Hans', type: 'Allié', attack: 2, health: 1 })], []);
+    expect(cannotAttackReason(s, uidOf('Hans'))).toBeNull();
+  });
+});
+
+describe('mots-clés', () => {
+  it('Provocation oblige à attaquer la carte, sauf si elle est engagée', () => {
+    const wall = normalizeCard({ id: 'b', name: 'Bjorn', type: 'Allié', attack: 1, health: 4, text: 'Provocation' });
+    const { s, uidOf } = setupBoards([ally({ name: 'A' })], [wall, ally({ id: 'z', name: 'Z' })]);
+    const a = uidOf('A');
+    expect(applyAction(s, { type: 'ATTACK', attacker: a, target: { kind: 'hero', player: 1 }, riposte: false }).error).toMatch(/Provocation/);
+    expect(applyAction(s, { type: 'ATTACK', attacker: a, target: { kind: 'card', uid: uidOf('Z') }, riposte: false }).error).toMatch(/Provocation/);
+    const tapped = act(s, { type: 'TAP', target: { kind: 'card', uid: uidOf('Bjorn') }, mode: 'engage' });
+    act(tapped, { type: 'ATTACK', attacker: a, target: { kind: 'hero', player: 1 }, riposte: false });
+  });
+
+  it('Défenseur ne peut pas attaquer ; Fonceur attaque tout de suite', () => {
+    const guard = normalizeCard({ id: 'g', name: 'Garde', type: 'Allié', attack: 1, health: 1, text: 'Provocation - Défenseur' });
+    const { s, uidOf } = setupBoards([guard], []);
+    expect(cannotAttackReason(s, uidOf('Garde'))).toMatch(/Défenseur/);
+    let t = game(deckOf([normalizeCard({ id: 'm', name: 'Marcheur', type: 'Allié', attack: 2, health: 1, text: 'Fonceur Fonceur — Peut attaquer dès son arrivée en jeu.' }), 30]), deckOf([ally(), 30]));
+    const m = t.players[0].hand[0];
+    t = act(t, { type: 'PLAY_CARD', uid: m, payWith: [] });
+    expect(cannotAttackReason(t, m)).toBeNull();
+  });
+
+  it('Riposte réplique même engagé ; Robuste réduit chaque blessure de 1', () => {
+    const tslich = normalizeCard({ id: 't', name: 'Tslich', type: 'Allié', attack: 4, health: 4, text: 'Fonceur - Riposte - Parade 1' });
+    const goule = normalizeCard({ id: 'o', name: 'Goule', type: 'Allié', attack: 1, health: 4, text: 'Robuste' });
+    const { s, uidOf } = setupBoards([ally({ name: 'A', attack: 3, health: 5 })], [tslich, goule]);
+    const engaged = act(s, { type: 'TAP', target: { kind: 'card', uid: uidOf('Tslich') }, mode: 'engage' });
+    expect(canRiposte(engaged, uidOf('Tslich'), uidOf('A'))).toBe(true);
+    const hit = act(engaged, { type: 'ATTACK', attacker: uidOf('A'), target: { kind: 'card', uid: uidOf('Goule') }, riposte: false });
+    expect(healthOf(hit, uidOf('Goule'))).toBe(2);
+  });
+
+  it('Vigueur se redresse en fin de tour', () => {
+    const maniel = normalizeCard({ id: 'v', name: 'Maniel', type: 'Allié', attack: 2, health: 2, text: 'Vigueur Vigueur : Se désengage en fin de tour' });
+    const { s, uidOf } = setupBoards([maniel], []);
+    const after = endTurn(act(s, { type: 'ATTACK', attacker: uidOf('Maniel'), target: { kind: 'hero', player: 1 }, riposte: false }));
+    expect(after.cards[uidOf('Maniel')].exhausted).toBe(false);
+  });
+});
+
+describe('Héros', () => {
+  const bow = normalizeCard({ id: 'arc', name: 'Arc Long', type: 'Objet', subtype: 'Equipement Héroïque', attack: 1, health: 2, text: 'Donne Portée à mon Héros' });
+
+  it('attaque avec son arme, qui perd 1 durabilité et se brise', () => {
+    const { s: start, uidOf } = setupBoards([bow], [ally({ name: 'Cible', attack: 3, health: 5 })]);
+    expect(heroAttackOf(start, 0)).toBe(1);
+    // Portée : la cible ne peut pas répliquer.
+    expect(canRiposte(start, uidOf('Cible'), HERO_ATTACKER)).toBe(false);
+    let s = act(start, { type: 'ATTACK', attacker: HERO_ATTACKER, target: { kind: 'hero', player: 1 }, riposte: false });
+    expect(s.players[1].heroHealth).toBe(19);
+    expect(cannotAttackReason(s, HERO_ATTACKER)).toMatch(/engagé/);
+    s = endTurn(endTurn(s));
+    s = act(s, { type: 'ATTACK', attacker: HERO_ATTACKER, target: { kind: 'hero', player: 1 }, riposte: false });
+    expect(s.players[0].discard).toContain(uidOf('Arc Long'));
+  });
+
+  it('les boucliers absorbent les blessures', () => {
+    const { s: start, uidOf } = setupBoards([ally({ name: 'A', attack: 3 })], []);
+    let s = act(start, { type: 'ADJUST', target: { kind: 'hero', player: 1 }, stat: 'shields', delta: 2 });
+    s = act(s, { type: 'ATTACK', attacker: uidOf('A'), target: { kind: 'hero', player: 1 }, riposte: false });
+    expect(s.players[1].shields).toBe(0);
+    expect(s.players[1].heroHealth).toBe(19);
+  });
+});
+
+describe('Dessins Éternels et états', () => {
+  const raflesie = normalizeCard({ id: 'r', name: 'Raflésie', type: 'Dessin', spire: 0, attack: 1, health: 4, text: 'Prévient les 2 prochaines blessures. Spire 3 — Éternel — Provocation - Défenseur' });
+
+  it('un Dessin reste en jeu seulement à sa spire, et compte comme Allié', () => {
+    let s = game(deckOf([raflesie, 30]), deckOf([ally(), 30]));
+    const [a, b] = s.players[0].hand;
+    s = act(s, { type: 'PLAY_CARD', uid: a, payWith: [] });
+    expect(s.players[0].discard).toContain(a);
+    s = act(s, { type: 'ADJUST', target: { kind: 'hero', player: 0 }, stat: 'spire', delta: 3 });
+    s = act(s, { type: 'PLAY_CARD', uid: b, payWith: [] });
+    expect(s.players[0].board).toContain(b);
+    expect(s.cards[b].keywords).toEqual(expect.arrayContaining(['Provocation', 'Défenseur', 'Éternel']));
+    expect(alliesOf(s, 0)).toContain(b);
+  });
+
+  it('Surchauffe bloque les Dessins Feu au tour suivant ; Brûlure empêche de se soigner', () => {
+    const zele = normalizeCard({ id: 'z', name: 'Excès de Zèle', type: 'Dessin', color: 'Rouge', spire: 0, text: 'Pioche deux cartes Surchauffe' });
+    const inferno = normalizeCard({ id: 'i', name: 'Inferno', type: 'Dessin', color: 'Rouge', spire: 0, text: 'Inflige 3 dégâts à votre adversaire Brûlure Votre adversaire ne peut pas se soigner au tour suivant' });
+    let s = game(deckOf([zele, 15], [inferno, 15]), deckOf([ally(), 30]), 2);
+    const z = s.players[0].hand.find(u => s.defs[s.cards[u].defId].name === 'Excès de Zèle')!;
+    const i = s.players[0].hand.find(u => s.defs[s.cards[u].defId].name === 'Inferno')!;
+    s = act(s, { type: 'PLAY_CARD', uid: i, payWith: [] });
+    s = act(s, { type: 'PLAY_CARD', uid: z, payWith: [] });
+    s = endTurn(s);
+    expect(applyAction(s, { type: 'ADJUST', target: { kind: 'hero', player: 1 }, stat: 'damage', delta: -1 }).error).toMatch(/Brûlure/);
+    s = endTurn(s);
+    const fire = s.players[0].hand.find(u => s.defs[s.cards[u].defId].color === 'Rouge');
+    if (fire) expect(cannotPlayReason(s, fire)).toMatch(/Surchauffe/);
+    expect(statusActive(s, 0, 'surchauffe')).toBe(true);
   });
 });

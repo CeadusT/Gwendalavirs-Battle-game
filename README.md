@@ -41,13 +41,21 @@ Toutes les valeurs sont dans [`src/engine/rules.ts`](src/engine/rules.ts) : modi
 | Main | 5 cartes au départ. En fin de tour, on défausse toute sa main et on pioche 5 cartes |
 | Début du tour | Toutes ses cartes se redressent |
 | Volonté | Coût d’une carte : 1 Volonté = 1 autre carte de la main défaussée. La Volonté générée par des effets se dépense en premier |
-| Spire | Échelle de 0 à 6. Poser un Dessin en Zone Imagination : +1 ou −1 au choix (les effets se gèrent au clic droit) |
+| Spire | Échelle de 0 à 6 (Basses Spires 0-2, Hautes Spires 3-6). Poser un Dessin en Zone Imagination : +1 ou −1 au choix. « Spire X — » = bonus seulement exactement à la spire X |
 | Zone Imagination | Visible. Une carte posée ne peut être jouée qu’à partir du tour suivant. En fin de tour, 2 cartes maximum (on choisit lesquelles garder) |
 | Dessins | Lancés : effet, puis défausse. Le journal rappelle la spire au moment du lancement (bonus de spire parfaite) |
 | Alliés | 3 maximum. Ne peuvent pas attaquer le tour où ils arrivent. Une attaque les incline. Un Allié incliné ne peut pas répliquer |
 | Objets | 3 maximum. Ne combattent pas et ne peuvent pas être attaqués |
-| Unique | Une carte « unique » (case du Card Studio) ne peut pas être deux fois sur le terrain du même joueur |
+| Types de cartes | Allié / Personnage / Jeton = Allié ; Objet / Objet légendaire = Objet ; tous les Dessins = Dessin. Réglable dans `src/engine/rules.ts` (`TYPE_CATEGORY`) |
+| Unique | Une carte « unique » (case du Card Studio, ou « Unique » dans le Sous-type) ne peut pas être deux fois sur le terrain du même joueur |
 | Ultimate | Jouable à la spire 6, puis la spire redescend à 0 |
+| Héros | Attaque dès qu’il a de l’ATK (armes « Equipement Héroïque » + bonus du tour). Une arme perd 1 durabilité (PV) par attaque et se brise à 0. Attaquer ou utiliser {T} engage le Héros |
+| Boucliers | 1 bouclier absorbe 1 blessure faite au Héros ; ils restent d’un tour à l’autre |
+| Dessins Éternels | Restent sur le terrain (= Monde réel). Avec des ATK/PV, ils comptent comme Alliés |
+| Mots-clés | Fonceur, Provocation, Défenseur, Riposte, Vigueur, Robuste, Portée, Immunité au combat : lus sur la carte à la spire où elle est jouée, et appliqués automatiquement |
+| Surchauffe | Pas de Dessin Feu (Rouge) à son prochain tour |
+| Brûlure | L’adversaire ne peut pas se soigner à son prochain tour |
+| Brûlure de Spire | Chaque carte jouée depuis l’Imagination inflige 1 blessure à son joueur |
 | Dessins légendaires | Ne se lancent qu’à la spire 6, puis la spire redescend à 0 |
 
 ## Lancer le projet (développeurs)
