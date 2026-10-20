@@ -90,9 +90,10 @@ export const CardView = memo(function CardView({ def, size, stats, className = '
               </svg>
             )}
           </div>
+          {def.showSpire && kind && <Emblem def={def} />}
           <div className="gw-shade" aria-hidden="true" />
           <div className="gw-head">
-            {def.showSpire && (kind ? <Emblem def={def} /> : <div className="gw-cost" title="Coût en Volonté"><span>{def.spire}</span></div>)}
+            {def.showSpire && !kind && <div className="gw-cost" title="Coût en Volonté"><span>{def.spire}</span></div>}
             <h3 className="gw-name" style={{ fontSize: `max(var(--card-name-min,0px),${nameSizeEm(def.name, def.fullArt)}em)` }}>{def.name}</h3>
             {!isHero && (
               <div className="gw-el" title={`Élément ${element.element}`}>
