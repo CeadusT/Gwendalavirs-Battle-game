@@ -24,6 +24,8 @@ export interface CardDef {
   fullArt: boolean;
   /** Un seul exemplaire à la fois sur le terrain de son propriétaire. */
   unique: boolean;
+  creativity: number;     // blason des Dessins : cercle bleu
+  power: number;          // blason des Dessins : cercle jaune
   image?: string;
 }
 

@@ -27,6 +27,29 @@ const HealthIcon = () => (
 );
 
 /** Famille visuelle : Dessin légendaire (cadre prismatique) ou autre Dessin (losange et plume). */
+/* Blason des Dessins : Volonté (rouge, = le coût) et Créativité (bleu) en haut, Pouvoir (jaune) en bas. */
+const GOLD = '#d8b25a';
+const INK = '#15110c';
+const EMBLEM_CIRCLES = [
+  { field: 'spire', fill: '#c8372d', cx: 33, cy: 39, tx: 29, ty: 35 },
+  { field: 'creativity', fill: '#2f5fc4', cx: 67, cy: 39, tx: 71, ty: 35 },
+  { field: 'power', fill: '#e3b31f', cx: 50, cy: 69, tx: 50, ty: 73 },
+] as const;
+
+function Emblem({ def }: { def: CardDef }) {
+  return (
+    <div className="gw-emblem" title={`Volonté ${def.spire} · Créativité ${def.creativity} · Pouvoir ${def.power}`}>
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="48" fill={INK} stroke={GOLD} strokeWidth="3.5" />
+        {EMBLEM_CIRCLES.map(k => <circle key={k.field} cx={k.cx} cy={k.cy} r="20" fill={k.fill} stroke={GOLD} strokeWidth="2.5" />)}
+        <circle cx="50" cy="49" r="9" fill={INK} stroke={GOLD} strokeWidth="2" />
+        <path d="M45 53 L50 48 L55 53 M50 48 L50 43" fill="none" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round" />
+        {EMBLEM_CIRCLES.map(k => <text key={k.field} x={k.tx} y={k.ty}>{def[k.field] ?? 0}</text>)}
+      </svg>
+    </div>
+  );
+}
+
 export function cardKind(def: CardDef): '' | 'drawing' | 'legend' {
   if (!/dessin/i.test(def.type)) return '';
   return /légendaire/i.test(def.type) ? 'legend' : 'drawing';
@@ -69,7 +92,7 @@ export const CardView = memo(function CardView({ def, size, stats, className = '
           </div>
           <div className="gw-shade" aria-hidden="true" />
           <div className="gw-head">
-            {def.showSpire && <div className="gw-cost" title="Coût en Volonté"><span>{def.spire}</span></div>}
+            {def.showSpire && (kind ? <Emblem def={def} /> : <div className="gw-cost" title="Coût en Volonté"><span>{def.spire}</span></div>)}
             <h3 className="gw-name" style={{ fontSize: `max(var(--card-name-min,0px),${nameSizeEm(def.name, def.fullArt)}em)` }}>{def.name}</h3>
             {!isHero && (
               <div className="gw-el" title={`Élément ${element.element}`}>
