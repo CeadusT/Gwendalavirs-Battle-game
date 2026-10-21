@@ -570,42 +570,6 @@
   }
 }
 
-/* ---------- Blason des Dessins : Volonté (rouge), Créativité (bleu), Pouvoir (jaune) ---------- */
-
-.gw-emblem {
-  position: absolute;
-  z-index: 3;
-  left: .95em;
-  bottom: 11.95em;
-  width: 4.3em;
-  height: 4.3em;
-  filter: drop-shadow(0 .1em .25em rgba(0,0,0,.75));
-}
-
-.gw-emblem svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.gw-emblem text {
-  font-family: 'Cinzel',Georgia,serif;
-  font-weight: 700;
-  font-size: 21px;
-  fill: #fffaf0;
-  stroke: #17110a;
-  stroke-width: 3.2px;
-  paint-order: stroke;
-  stroke-linejoin: round;
-  text-anchor: middle;
-  dominant-baseline: central;
-}
-
-.gw--full .gw-emblem {
-  left: .7em;
-  bottom: 12.475em;
-}
-
 /* ---------- Ajouts propres au jeu ---------- */
 
 /* Petites cartes (main, terrain) : planchers de lisibilité, comme le mode compact du deckbuilder. */
